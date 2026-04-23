@@ -49,6 +49,7 @@ if same_path:
 
 independent_gyro = False #if True, can set angular velocity independently of rotation, if False angular velocity calculated from rotation
 motion_offset = 0 #shifts motion macros by this amount
+ls_offset = 0 #shifts left stick inputs by this number of degrees
 
 @dataclass
 class Vector2f:
@@ -341,6 +342,7 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
         if prev_frame is not None: token = evaluateLast(token, prev_stick.theta)
         if offset_from_row_index is not None: token = evaluateCurrentFrame(token, offset_from_row_index)
         theta = float(token)
+    theta += ls_offset
     return r, theta
 
 #euler in degrees to rotation matrix
@@ -680,6 +682,10 @@ while (loop or do_once):
 
     script = Script("", "", 1, False, Vector3f.zero())
 
+    motion_offset = 0
+    ls_offset = 0
+    independent_gyro = False
+    
     num_frames = 0
 
     lineInNumber = 1
@@ -749,6 +755,8 @@ while (loop or do_once):
                             script.startPosition.z = float(coords[2])
                         elif var == 'motion_offset':
                             motion_offset = int(value)
+                        elif var == 'ls_offset':
+                            ls_offset = float(value)
                         elif var == 'is2p' or var == 'is_two_player':
                             if value.lower() == 'true' or value.lower() == 't':
                                 script.is_two_player = True
