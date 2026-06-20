@@ -728,7 +728,7 @@ def writeCommand(file:FileIO,type:int,size:int,data:bytes) -> None:
 
 def writeCmdFrame(file:FileIO,frame:int) -> None:
     data:bytes = frame.to_bytes(4,"little")
-    print(f"CmdFrame: {frame}")
+    # print(f"CmdFrame: {frame}")
     
     writeCommand(file,0,4,data)
 
@@ -739,7 +739,7 @@ def writeCmdController(file:FileIO,player:int,buttons:bytes,left:Vector2i, right
     data+=left.y.to_bytes(4,"little",signed=True)
     data+=right.x.to_bytes(4,"little",signed=True)
     data+=right.y.to_bytes(4,"little",signed=True)
-    print(f"CmdController: {player}, {bin(int.from_bytes(buttons,"little"))}, {left.x}, {left.y}, {right.x}, {right.y}")
+    # print(f"CmdController: {player}, {bin(int.from_bytes(buttons,"little"))}, {left.x}, {left.y}, {right.x}, {right.y}")
     
     writeCommand(file,1,0x18,data)
     
@@ -749,7 +749,7 @@ def writeCmdMotion(file:FileIO,player:int,controllerID:int,accel:Vector3f,gyro:V
     data += struct.pack("<2x")
     data+=struct.pack("<3f",accel.x,accel.y,accel.z)    
     data+=struct.pack("<3f",gyro.x,gyro.y,gyro.z)    
-    print(f"CmdMotion: {player}, {controllerID}, {accel.x}, {accel.y}, {accel.z}, {gyro.x}, {gyro.y}, {gyro.z}")
+    # print(f"CmdMotion: {player}, {controllerID}, {accel.x}, {accel.y}, {accel.z}, {gyro.x}, {gyro.y}, {gyro.z}")
     
     writeCommand(file,2,0x1c,data)
     
