@@ -89,7 +89,17 @@ class Vector3f:
     def default_accel():
         #return Vector3f(0, -1, 0)
         return Vector3f(0, 0, 0)
+
+@dataclass
+class Quat4f:
+    x:float
+    y:float
+    z:float
+    w:float
     
+    @staticmethod
+    def unit():
+        return Quat4f(0,0,0,0)
 @dataclass
 class Joystick:
     x: int
@@ -755,6 +765,20 @@ def writeCmdMotion(file:FileIO,player:int,controllerID:int,accel:Vector3f,gyro:V
     
     writeCommand(file,2,0x1c,data)
     
+def writeCmdGo(file:FileIO,scenario:int,subScenario:int,returnPrev:bool,stageName:str,entr:str)->None:
+    data:bytes = struct.pack("<BB?x",scenario,subScenario,returnPrev)
+    data += (len(stageName)+1).to_bytes(2,"little")
+    data += bytes(stageName,"utf-8")+b"\x00"
+    data += (len(entr)+1).to_bytes(2,"little")
+    data += bytes(entr,"utf-8")+b"\x00"
+    
+    writeCommand(file,0xc001,8+len(stageName)+1+len(entr)+1,data)
+    
+def writeCmdTp(file:FileIO, pos:Vector3f, rot:Quat4f, isCap:bool)-> None:
+    data:bytes = struct.pack("<3f",pos.x,pos.y,pos.z)
+    data+=struct.pack("<4f",rot.x,rot.y,rot.z,rot.w)
+    writeCommand(file,0xc003 if isCap else 0xc002,0xc+0x10,data)
+    
 def align_up(value, alignment):
     return ((value + alignment - 1) // alignment) * alignment
 do_once = True
@@ -977,6 +1001,12 @@ while (loop or do_once):
 
         align = align_up(size,4)
         outf.write(struct.pack(f"<{align-size}x"))
+        
+        if script.change_stage_name:
+            writeCmdGo(outf,script.scenario_no,0,False,script.change_stage_name,script.change_stage_id)
+            
+        if script.startPosition.x != 0 or script.startPosition.y != 0 or script.startPosition.z != 0:
+            writeCmdTp(outf,script.startPosition,Quat4f.unit(),False)
 
         for frame in script.frames:
             # print(f"{frame.step}, {prevFrame}")
