@@ -1,4 +1,5 @@
 import math
+from pickle import TRUE
 import struct
 import enum
 import sys
@@ -7,6 +8,8 @@ import json
 import re
 import csv
 from dataclasses import dataclass, field
+from io import FileIO
+from typing import cast
 
 #default gyroscope rotation is 3x3 identity matrix
 
@@ -18,6 +21,7 @@ nxtas = False
 remove_empty = False #won't work for lunakit/exlaunch format until mod treats y accel as -1
 same_path = False
 loop = False
+stas = False
 
 if sys.argv[1][0] == '-':
     options = sys.argv[1]
@@ -27,6 +31,7 @@ if sys.argv[1][0] == '-':
     remove_empty = "e" in options
     same_path = "p" in options
     loop = "l" in options
+    stas = "s" in options
     infile = sys.argv[2]
     if not same_path:
         outfile = sys.argv[3]
@@ -49,12 +54,21 @@ if same_path:
 
 independent_gyro = False #if True, can set angular velocity independently of rotation, if False angular velocity calculated from rotation
 motion_offset = 0 #shifts motion macros by this amount
-ls_offset = 0 #shifts left stick inputs by this number of degrees
+ls_offset:float = 0 #shifts left stick inputs by this number of degrees
 
 @dataclass
 class Vector2f:
     x: float
     y: float
+
+    @staticmethod
+    def zero():
+        return Vector2f(0, 0)
+
+@dataclass
+class Vector2i:
+    x: int
+    y: int
 
     @staticmethod
     def zero():
@@ -97,6 +111,8 @@ class Joystick:
     def cartesian(x, y): #note that with how polar rounds the r and theta may not generate the x and y
         return Joystick(math.sqrt(x**2 + y**2), math.degrees(math.atan2(y, x)), x, y)
 
+    def asVec2i(self) -> Vector2i:
+        return Vector2i(int(self.x*32767),int(self.y*32767))
 @dataclass
 class Matrix33f:
     xx: float
@@ -220,6 +236,25 @@ class Button(enum.Enum):
     cPadIdx_rightRight = 27,
     cPadIdx_Max = 28
 
+class STASButton(enum.Enum):
+	cSTAS_A = 0,
+	cSTAS_B=1,
+	cSTAS_X=2,
+	cSTAS_Y=3,
+	cSTAS_LeftStick=4,
+	cSTAS_RightStick=5,
+	cSTAS_L=6,
+	cSTAS_R=7,
+	cSTAS_ZL=8,
+	cSTAS_ZR=9,
+	cSTAS_Plus=10,
+	cSTAS_Minus=11,
+	cSTAS_DLeft=12,
+	cSTAS_DUp=13,
+	cSTAS_DRight=14,
+	cSTAS_DDown=15,
+
+
 def to_f2(f4): #stores float with 2 byte precision if uncommented
     #return int(f4 * 32767) / 32767.0
     return f4
@@ -243,6 +278,27 @@ def getButtonBin(button):
     elif button == "dp-d": return 2**Button.cPadIdx_Down.value[0]
     elif button == "ls": return 2**Button.cPadIdx_1.value[0]
     elif button == "rs": return 2**Button.cPadIdx_2.value[0]
+    else: return 0 #no button found
+    
+def getButtonBinSTAS(button):
+    button = button.lower().strip()
+    if len(button) > 1 and button[0] == "c": button = button[1:] #2P button
+    if button == "a": return 2**STASButton.cSTAS_A.value[0]
+    elif button == "b": return 2**STASButton.cSTAS_B.value[0]
+    elif button == "x": return 2**STASButton.cSTAS_X.value[0]
+    elif button == "y": return 2**STASButton.cSTAS_Y.value[0]
+    elif button == "l": return 2**STASButton.cSTAS_L.value[0]
+    elif button == "r": return 2**STASButton.cSTAS_R.value[0]
+    elif button == "zl": return 2**STASButton.cSTAS_ZL.value[0]
+    elif button == "zr": return 2**STASButton.cSTAS_ZR.value[0]
+    elif button == "plus" or button == "+": return 2**STASButton.cSTAS_Plus.value[0]
+    elif button == "minus" or button == "-": return 2**STASButton.cSTAS_Minus.value[0]
+    elif button == "dp-l": return 2**STASButton.cSTAS_DLeft.value[0]
+    elif button == "dp-u": return 2**STASButton.cSTAS_DUp.value[0]
+    elif button == "dp-r": return 2**STASButton.cSTAS_DRight.value[0]
+    elif button == "dp-d": return 2**STASButton.cSTAS_DDown.value[0]
+    elif button == "ls": return 2**STASButton.cSTAS_LeftStick.value[0]
+    elif button == "rs": return 2**STASButton.cSTAS_RightStick.value[0]
     else: return 0 #no button found
     
 def nxTAS_Buttons(buttons): #converts button int into string list of buttons for nx-TAS format
@@ -635,16 +691,17 @@ def addToFrameRange(token, frameRange:range, rowIndex):
 
                 if l_button:
                     for j in frameRange:
-                        script.getFrames(player_two)[j].buttons |= 2**Button.cPadIdx_L.value[0]
+                        script.getFrames(player_two)[j].buttons |= 2**Button.cPadIdx_L.value[0] if not stas else 2**STASButton.cSTAS_L.value[0]
 
                 #include dpad button
-                button_bin = getButtonBin(token)
+                
+                button_bin = getButtonBin(token) if not stas else getButtonBinSTAS(token)
                 for j in frameRange:
                     script.getFrames(player_two)[j].buttons |= button_bin
 
 
         else: #button or comment/invalid
-            button_bin = getButtonBin(token)         
+            button_bin = getButtonBin(token)if not stas else getButtonBinSTAS(token)         
             for j in frameRange:
                 script.getFrames(player_two)[j].buttons |= button_bin
 
@@ -656,7 +713,7 @@ def addToFrameRange(token, frameRange:range, rowIndex):
 def addToggle(token, indexWrite, on):
     try:
         player_two = "c" in token
-        button_bin = getButtonBin(token)
+        button_bin = getButtonBin(token)if not stas else getButtonBinSTAS(token)
         script.addFrames(indexWrite + 1)
         if on: script.getFrames(player_two)[indexWrite].buttonsOn |= button_bin
         else: script.getFrames(player_two)[indexWrite].buttonsOff |= button_bin
@@ -664,6 +721,40 @@ def addToggle(token, indexWrite, on):
         if debug: print(e)
         sys.exit("Syntax error(s) on line " + str(lineInNumber) + " prevented script generation")("Syntax error(s) on line " + str(lineInNumber) + " prevented script generation")
 
+def writeCommand(file:FileIO,type:int,size:int,data:bytes) -> None:
+    file.write(struct.pack("<H",type))
+    file.write(size.to_bytes(6,"little"))
+    file.write(data)
+
+def writeCmdFrame(file:FileIO,frame:int) -> None:
+    data:bytes = frame.to_bytes(4,"little")
+    print(f"CmdFrame: {frame}")
+    
+    writeCommand(file,0,4,data)
+
+def writeCmdController(file:FileIO,player:int,buttons:bytes,left:Vector2i, right:Vector2i)->None:
+    data:bytes = player.to_bytes(1,"little")
+    data += buttons
+    data+=left.x.to_bytes(4,"little",signed=True)
+    data+=left.y.to_bytes(4,"little",signed=True)
+    data+=right.x.to_bytes(4,"little",signed=True)
+    data+=right.y.to_bytes(4,"little",signed=True)
+    print(f"CmdController: {player}, {bin(int.from_bytes(buttons,"little"))}, {left.x}, {left.y}, {right.x}, {right.y}")
+    
+    writeCommand(file,1,0x18,data)
+    
+def writeCmdMotion(file:FileIO,player:int,controllerID:int,accel:Vector3f,gyro:Vector3f) ->None:
+    data:bytes = player.to_bytes(1,"little")
+    data += controllerID.to_bytes(1,"little")
+    data += struct.pack("<2x")
+    data+=struct.pack("<3f",accel.x,accel.y,accel.z)    
+    data+=struct.pack("<3f",gyro.x,gyro.y,gyro.z)    
+    print(f"CmdMotion: {player}, {controllerID}, {accel.x}, {accel.y}, {accel.z}, {gyro.x}, {gyro.y}, {gyro.z}")
+    
+    writeCommand(file,2,0x1c,data)
+    
+def align_up(value, alignment):
+    return ((value + alignment - 1) // alignment) * alignment
 do_once = True
 
 if loop:
@@ -716,8 +807,8 @@ while (loop or do_once):
         prevLineInDuration = 1
         for lineIn in f:
             if debug: print(lineIn)
-            lineIn = lineIn.split('\t')
-            lineIn[-1] = lineIn[-1].strip()
+            lineIn = lineIn.split('\t') #type: ignore
+            lineIn[-1] = lineIn[-1].strip() #type: ignore
             
             #handle first token (duration or variable assignment)
             lineInDuration = 1
@@ -725,7 +816,7 @@ while (loop or do_once):
             try: lineInDuration = int(float(first))
             except:
                 if first == '*': #toggle on the buttons
-                    lineInDuration = '*'
+                    lineInDuration = '*' #type: ignore
                 elif first == '?':
                     sys.exit("Error: ? duration only allowed within sequences")
                 elif first == '':
@@ -859,14 +950,45 @@ while (loop or do_once):
         debugFile.close()
 
     if nxtas:
-        outf = open(outfile, "w")
+        outf:FileIO = cast(FileIO,open(outfile, "w"))
         for frame in script.frames:
             outf.write(str(frame.step) + " " + nxTAS_Buttons(frame.buttons) + " "
                     + str(int(frame.left_stick.x * 32767)) + ";" + str(int(frame.left_stick.y * 32767)) + " "
                     + str(int(frame.right_stick.x * 32767)) + ";" + str(int(frame.right_stick.y * 32767)) + '\n')
 
+    elif stas:
+        size:int = 0
+        prevFrame:int = -1
+        outf = cast(FileIO,open(outfile,"wb"))
+        # File Header
+        size += outf.write(b"STAS")
+        size += outf.write(struct.pack("<3H2xQ",0x0001,0x0000,0x0000,0x0100000000010000)) # Format Ver, Game Addon Ver, Editor Ver, Title Id
+
+        # Script Header
+        size += outf.write(struct.pack("<I",0)) #TODO: Command Count
+        size += outf.write(struct.pack("<I",script.frames[-1].step)) #TODO: Frame Count
+        size += outf.write(struct.pack("<I",0)) #Editing time in seconds
+        size += outf.write(struct.pack("<8B",2,2 if script.is_two_player else 0,0,0,0,0,0,0)) # Controller types per player
+        size += outf.write(struct.pack("<H",0)) # Author Length
+        size += outf.write(struct.pack("<I",0)) # Title Length
+        size += outf.write(struct.pack("<I",0)) # Description Length
+
+        align = align_up(size,4)
+        outf.write(struct.pack(f"<{align-size}x"))
+
+        for frame in script.frames:
+            # print(f"{frame.step}, {prevFrame}")
+            if frame.step > prevFrame:
+                prevFrame = frame.step
+                writeCmdFrame(outf,frame.step)
+                
+            writeCmdController(outf,1 if frame.second_player else 0,frame.buttons.to_bytes(7,"little"),frame.left_stick.asVec2i(),frame.right_stick.asVec2i())
+            writeCmdMotion(outf,1 if frame.second_player else 0,0,frame.accel_left,frame.gyro_left.ang_vel)
+            writeCmdMotion(outf,1 if frame.second_player else 0,1,frame.accel_right,frame.gyro_right.ang_vel)
+        
+    
     else:
-        outf = open(outfile, "wb")
+        outf = cast(FileIO,open(outfile,"wb"))
         outf.write(b"BOOB")
         outf.write(struct.pack("<I?3xi", len(script.frames), script.is_two_player, script.scenario_no))
         outf.write(bytes(script.change_stage_name, encoding="ascii") + b'\0'*(128-len(script.change_stage_name)))
@@ -893,16 +1015,16 @@ while (loop or do_once):
         ftp_config = json.load(ftp_config_file)
         ftp_config_file.close
 
-        ftp = FTP()
-        ftp.connect(host=ftp_config['ip'], port=int(ftp_config['port']))
-        ftp.login(user=ftp_config['user'],passwd=ftp_config['passwd'])
+        ftpC = FTP()
+        ftpC.connect(host=ftp_config['ip'], port=int(ftp_config['port']))
+        ftpC.login(user=ftp_config['user'],passwd=ftp_config['passwd'])
 
         file = open(outfile, 'rb')
 
-        result = ftp.storbinary('STOR SMO/tas/scripts/' + outfile, file)
+        result = ftpC.storbinary('STOR SMO/tas/scripts/' + outfile, file)
         if result == '226 OK':
             print('Script successfully uploaded')
         else:
             print('FTP error')
 
-        ftp.quit()
+        ftpC.quit()
