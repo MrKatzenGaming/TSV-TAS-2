@@ -92,27 +92,29 @@ class Vector3f:
     
 @dataclass
 class Joystick:
-    r: float
-    theta: float
-    x: float
-    y: float
+    x: int
+    y: int
 
     @staticmethod
     def zero():
-        return Joystick(0, 0, 0, 0)
+        return Joystick(0, 0)
     
     @staticmethod
     def polar(r_theta): #accepts pair with r and theta, snaps to nearest 2^16-representable float
         r = r_theta[0]
         theta = r_theta[1]
-        return Joystick(r, theta, int(32767 * r * math.cos(math.radians(theta))) / 32767.0, int(32767 * r * math.sin(math.radians(theta))) / 32767.0)
+        return Joystick(int(32767 * r * math.cos(math.radians(theta))), int(32767 * r * math.sin(math.radians(theta))))
     
     @staticmethod
-    def cartesian(x, y): #note that with how polar rounds the r and theta may not generate the x and y
-        return Joystick(math.sqrt(x**2 + y**2), math.degrees(math.atan2(y, x)), x, y)
+    def cartesian(x, y): 
+        return Joystick(x, y)
+    
+    #note that with how polar rounds the r and theta may not generate the x and y
+    def r(self):
+        return math.sqrt((self.x/32767)**2 + (self.y/32767)**2)
+    def theta(self):
+        return math.degrees(math.atan2(self.y/32767, self.x/32767))
 
-    def asVec2i(self) -> Vector2i:
-        return Vector2i(int(self.x*32767),int(self.y*32767))
 @dataclass
 class Matrix33f:
     xx: float
@@ -391,11 +393,11 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
     if ';' in token: #(r; theta)
         r_token = token[0:token.index(';')]
         theta_token = token[token.index(';') + 1:]
-        if prev_frame is not None: r_token, theta_token = evaluateLast(r_token, prev_stick.r), evaluateLast(theta_token, prev_stick.theta)
+        if prev_frame is not None: r_token, theta_token = evaluateLast(r_token, prev_stick.r()), evaluateLast(theta_token, prev_stick.theta())
         if offset_from_row_index is not None: r_token, theta_token = evaluateCurrentFrame(r_token, offset_from_row_index), evaluateCurrentFrame(theta_token, offset_from_row_index)
         r, theta = float(r_token), float(theta_token)
     else:# (r)
-        if prev_frame is not None: token = evaluateLast(token, prev_stick.theta)
+        if prev_frame is not None: token = evaluateLast(token, prev_stick.theta())
         if offset_from_row_index is not None: token = evaluateCurrentFrame(token, offset_from_row_index)
         theta = float(token)
     theta += ls_offset
@@ -732,7 +734,7 @@ def writeCmdFrame(file:FileIO,frame:int) -> None:
     
     writeCommand(file,0,4,data)
 
-def writeCmdController(file:FileIO,player:int,buttons:bytes,left:Vector2i, right:Vector2i)->None:
+def writeCmdController(file:FileIO,player:int,buttons:bytes,left:Joystick, right:Joystick)->None:
     data:bytes = player.to_bytes(1,"little")
     data += buttons
     data+=left.x.to_bytes(4,"little",signed=True)
@@ -966,7 +968,7 @@ while (loop or do_once):
 
         # Script Header
         size += outf.write(struct.pack("<I",0)) #TODO: Command Count
-        size += outf.write(struct.pack("<I",script.frames[-1].step)) #TODO: Frame Count
+        size += outf.write(struct.pack("<I",script.frames[-1].step)) #TODO: This is bad
         size += outf.write(struct.pack("<I",0)) #Editing time in seconds
         size += outf.write(struct.pack("<8B",2,2 if script.is_two_player else 0,0,0,0,0,0,0)) # Controller types per player
         size += outf.write(struct.pack("<H",0)) # Author Length
@@ -982,7 +984,7 @@ while (loop or do_once):
                 prevFrame = frame.step
                 writeCmdFrame(outf,frame.step)
                 
-            writeCmdController(outf,1 if frame.second_player else 0,frame.buttons.to_bytes(7,"little"),frame.left_stick.asVec2i(),frame.right_stick.asVec2i())
+            writeCmdController(outf,1 if frame.second_player else 0,frame.buttons.to_bytes(7,"little"),frame.left_stick,frame.right_stick)
             writeCmdMotion(outf,1 if frame.second_player else 0,0,frame.accel_left,frame.gyro_left.ang_vel)
             writeCmdMotion(outf,1 if frame.second_player else 0,1,frame.accel_right,frame.gyro_right.ang_vel)
         
@@ -997,8 +999,8 @@ while (loop or do_once):
 
         for frame in script.frames:
             outf.write(struct.pack("<I?3xI", frame.step, frame.second_player, frame.buttons))
-            outf.write(struct.pack("<2f", frame.left_stick.x, frame.left_stick.y))
-            outf.write(struct.pack("<2f", frame.right_stick.x, frame.right_stick.y))
+            outf.write(struct.pack("<2f", frame.left_stick.x/32767.0, frame.left_stick.y/32767.0))
+            outf.write(struct.pack("<2f", frame.right_stick.x/32767.0, frame.right_stick.y/32767.0))
             outf.write(struct.pack("<3f", frame.accel_left.x, frame.accel_left.y, frame.accel_left.z))
             outf.write(struct.pack("<3f", frame.accel_right.x, frame.accel_right.y, frame.accel_right.z))
             outf.write(struct.pack("<9f", frame.gyro_left.direction.xx, frame.gyro_left.direction.xy, frame.gyro_left.direction.xz, frame.gyro_left.direction.yx, frame.gyro_left.direction.yy, frame.gyro_left.direction.yz, frame.gyro_left.direction.zx, frame.gyro_left.direction.zy, frame.gyro_left.direction.zz))
