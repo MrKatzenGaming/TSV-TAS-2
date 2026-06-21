@@ -55,7 +55,8 @@ if same_path:
     if nxtas:
         outfile += ".txt"
 
-independent_gyro = False  # if True, can set angular velocity independently of rotation, if False angular velocity calculated from rotation
+# if True, can set angular velocity independently of rotation, if False angular velocity calculated from rotation
+independent_gyro = False
 motion_offset = 0  # shifts motion macros by this amount
 ls_offset: float = 0  # shifts left stick inputs by this number of degrees
 
@@ -378,123 +379,139 @@ def to_f2(f4):  # stores float with 2 byte precision if uncommented
     return f4
 
 
-def getButtonBin(button):
+def getButtonBin(button: str, stas: bool):
     button = button.lower().strip()
     if len(button) > 1 and button[0] == "c":
         button = button[1:]  # 2P button
     if button == "a":
-        return 2**Button.cPadIdx_A.value
-    elif button == "b":
-        return 2**Button.cPadIdx_B.value
-    elif button == "x":
-        return 2**Button.cPadIdx_X.value
-    elif button == "y":
-        return 2**Button.cPadIdx_Y.value
-    elif button == "l":
-        return 2**Button.cPadIdx_L.value
-    elif button == "r":
-        return 2**Button.cPadIdx_R.value
-    elif button == "zl":
-        return 2**Button.cPadIdx_ZL.value
-    elif button == "zr":
-        return 2**Button.cPadIdx_ZR.value
-    elif button == "plus" or button == "+":
-        return 2**Button.cPadIdx_Plus.value
-    elif button == "minus" or button == "-":
-        return 2**Button.cPadIdx_Minus.value
-    elif button == "dp-l":
-        return 2**Button.cPadIdx_Left.value
-    elif button == "dp-u":
-        return 2**Button.cPadIdx_Up.value
-    elif button == "dp-r":
-        return 2**Button.cPadIdx_Right.value
-    elif button == "dp-d":
-        return 2**Button.cPadIdx_Down.value
-    elif button == "ls":
-        return 2**Button.cPadIdx_1.value
-    elif button == "rs":
-        return 2**Button.cPadIdx_2.value
-    else:
-        return 0  # no button found
+        return 2 ** (STASButton.cSTAS_A.value if stas else Button.cPadIdx_A.value)
 
-
-def getButtonBinSTAS(button):
-    button = button.lower().strip()
-    if len(button) > 1 and button[0] == "c":
-        button = button[1:]  # 2P button
-    if button == "a":
-        return 2**STASButton.cSTAS_A.value
     elif button == "b":
-        return 2**STASButton.cSTAS_B.value
+        return 2 ** (STASButton.cSTAS_B.value if stas else Button.cPadIdx_B.value)
+
     elif button == "x":
-        return 2**STASButton.cSTAS_X.value
+        return 2 ** (STASButton.cSTAS_X.value if stas else Button.cPadIdx_X.value)
+
     elif button == "y":
-        return 2**STASButton.cSTAS_Y.value
+        return 2 ** (STASButton.cSTAS_Y.value if stas else Button.cPadIdx_Y.value)
+
     elif button == "l":
-        return 2**STASButton.cSTAS_L.value
+        return 2 ** (STASButton.cSTAS_L.value if stas else Button.cPadIdx_L.value)
+
     elif button == "r":
-        return 2**STASButton.cSTAS_R.value
+        return 2 ** (STASButton.cSTAS_R.value if stas else Button.cPadIdx_R.value)
+
     elif button == "zl":
-        return 2**STASButton.cSTAS_ZL.value
+        return 2 ** (STASButton.cSTAS_ZL.value if stas else Button.cPadIdx_ZL.value)
+
     elif button == "zr":
-        return 2**STASButton.cSTAS_ZR.value
+        return 2 ** (STASButton.cSTAS_ZR.value if stas else Button.cPadIdx_ZR.value)
+
     elif button == "plus" or button == "+":
-        return 2**STASButton.cSTAS_Plus.value
+        return 2 ** (STASButton.cSTAS_Plus.value if stas else Button.cPadIdx_Plus.value)
+
     elif button == "minus" or button == "-":
-        return 2**STASButton.cSTAS_Minus.value
+        return 2 ** (
+            STASButton.cSTAS_Minus.value if stas else Button.cPadIdx_Minus.value
+        )
+
     elif button == "dp-l":
-        return 2**STASButton.cSTAS_DLeft.value
+        return 2 ** (
+            STASButton.cSTAS_DLeft.value if stas else Button.cPadIdx_Left.value
+        )
+
     elif button == "dp-u":
-        return 2**STASButton.cSTAS_DUp.value
+        return 2 ** (STASButton.cSTAS_DUp.value if stas else Button.cPadIdx_Up.value)
+
     elif button == "dp-r":
-        return 2**STASButton.cSTAS_DRight.value
+        return 2 ** (
+            STASButton.cSTAS_DRight.value if stas else Button.cPadIdx_Right.value
+        )
+
     elif button == "dp-d":
-        return 2**STASButton.cSTAS_DDown.value
+        return 2 ** (
+            STASButton.cSTAS_DDown.value if stas else Button.cPadIdx_Down.value
+        )
+
     elif button == "ls":
-        return 2**STASButton.cSTAS_LeftStick.value
+        return 2 ** (
+            STASButton.cSTAS_LeftStick.value if stas else Button.cPadIdx_1.value
+        )
+
     elif button == "rs":
-        return 2**STASButton.cSTAS_RightStick.value
+        return 2 ** (
+            STASButton.cSTAS_RightStick.value if stas else Button.cPadIdx_2.value
+        )
     else:
         return 0  # no button found
 
 
 def nxTAS_Buttons(
-    buttons,
+    buttons: int, stas: bool
 ):  # converts button int into string list of buttons for nx-TAS format
     button_list = []
     if buttons == 0:
         return "NONE"
-    if buttons & 2 ** Button.cPadIdx_A.value[0]:
+    if buttons & 2 ** (STASButton.cSTAS_A.value if stas else Button.cPadIdx_A.value):
         button_list.append("KEY_A")
-    if buttons & 2 ** Button.cPadIdx_B.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_B.value if stas else Button.cPadIdx_B.value):
         button_list.append("KEY_B")
-    if buttons & 2 ** Button.cPadIdx_X.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_X.value if stas else Button.cPadIdx_X.value):
         button_list.append("KEY_X")
-    if buttons & 2 ** Button.cPadIdx_Y.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_Y.value if stas else Button.cPadIdx_Y.value):
         button_list.append("KEY_Y")
-    if buttons & 2 ** Button.cPadIdx_L.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_L.value if stas else Button.cPadIdx_L.value):
         button_list.append("KEY_L")
-    if buttons & 2 ** Button.cPadIdx_R.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_R.value if stas else Button.cPadIdx_R.value):
         button_list.append("KEY_R")
-    if buttons & 2 ** Button.cPadIdx_ZL.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_ZL.value if stas else Button.cPadIdx_ZL.value):
         button_list.append("KEY_ZL")
-    if buttons & 2 ** Button.cPadIdx_ZR.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_ZR.value if stas else Button.cPadIdx_ZR.value):
         button_list.append("KEY_ZR")
-    if buttons & 2 ** Button.cPadIdx_Plus.value[0]:
+
+    if buttons & 2 ** (
+        STASButton.cSTAS_Plus.value if stas else Button.cPadIdx_Plus.value
+    ):
         button_list.append("KEY_PLUS")
-    if buttons & 2 ** Button.cPadIdx_Minus.value[0]:
+
+    if buttons & 2 ** (
+        STASButton.cSTAS_Minus.value if stas else Button.cPadIdx_Minus.value
+    ):
         button_list.append("KEY_MINUS")
-    if buttons & 2 ** Button.cPadIdx_Left.value[0]:
+
+    if buttons & 2 ** (
+        STASButton.cSTAS_DLeft.value if stas else Button.cPadIdx_Left.value
+    ):
         button_list.append("KEY_DLEFT")
-    if buttons & 2 ** Button.cPadIdx_Right.value[0]:
+
+    if buttons & 2 ** (
+        STASButton.cSTAS_DRight.value if stas else Button.cPadIdx_Right.value
+    ):
         button_list.append("KEY_DRIGHT")
-    if buttons & 2 ** Button.cPadIdx_Up.value[0]:
+
+    if buttons & 2 ** (STASButton.cSTAS_DUp.value if stas else Button.cPadIdx_Up.value):
         button_list.append("KEY_DUP")
-    if buttons & 2 ** Button.cPadIdx_Down.value[0]:
+
+    if buttons & 2 ** (
+        STASButton.cSTAS_DDown.value if stas else Button.cPadIdx_Down.value
+    ):
         button_list.append("KEY_DDOWN")
-    if buttons & 2 ** Button.cPadIdx_1.value[0]:
+
+    if buttons & 2 ** (
+        STASButton.cSTAS_LeftStick.value if stas else Button.cPadIdx_1.value
+    ):
         button_list.append("KEY_LSTICK")
-    if buttons & 2 ** Button.cPadIdx_2.value[0]:
+
+    if buttons & 2 ** (
+        STASButton.cSTAS_RightStick.value if stas else Button.cPadIdx_2.value
+    ):
         button_list.append("KEY_RSTICK")
 
     return ";".join(button_list)
@@ -534,7 +551,8 @@ def evaluateMath(token, whole_token):  # evaluates math expressions
         math_regex = "([\\(\\,\\;\\[])(([0-9,\\. \\+\\-\\*÷\\(\\)])+([\\+\\-\\*÷])([0-9,\\. \\+\\-\\*÷\\(\\)])+)([\\)\\,\\;\\]])"
         group = 2
     try:
-        while match_obj := re.search(math_regex, token):  # evaluate math operations
+        # evaluate math operations
+        while match_obj := re.search(math_regex, token):
             # replace the math expression with its evaluation, first replacing ÷ with / so Python can evaluate the division
             token = token.replace(
                 match_obj.group(group),
@@ -1053,14 +1071,12 @@ def addToFrameRange(token, frameRange: range, rowIndex):
 
                 # include dpad button
 
-                button_bin = (
-                    getButtonBin(token) if not stas else getButtonBinSTAS(token)
-                )
+                button_bin = getButtonBin(token, stas)
                 for j in frameRange:
                     script.getFrames(player_two)[j].buttons |= button_bin
 
         else:  # button or comment/invalid
-            button_bin = getButtonBin(token) if not stas else getButtonBinSTAS(token)
+            button_bin = getButtonBin(token, stas)
             for j in frameRange:
                 script.getFrames(player_two)[j].buttons |= button_bin
 
@@ -1078,7 +1094,8 @@ def addToFrameRange(token, frameRange: range, rowIndex):
 def addToggle(token, indexWrite, on):
     try:
         player_two = "c" in token
-        button_bin = getButtonBin(token) if not stas else getButtonBinSTAS(token)
+        button_bin = getButtonBin(token, stas)
+
         script.addFrames(indexWrite + 1)
         if on:
             script.getFrames(player_two)[indexWrite].buttonsOn |= button_bin
@@ -1436,7 +1453,7 @@ while loop or do_once:
             outf.write(
                 str(frame.step)
                 + " "
-                + nxTAS_Buttons(frame.buttons)
+                + nxTAS_Buttons(frame.buttons, stas)
                 + " "
                 + str(frame.left_stick.x)
                 + ";"
