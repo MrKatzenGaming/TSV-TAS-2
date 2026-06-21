@@ -128,11 +128,7 @@ class Joystick:
         r = r_theta[0]
         theta = r_theta[1]
         return Joystick(int(32767 * r * math.cos(math.radians(theta))), int(32767 * r * math.sin(math.radians(theta))))
-    
-    @staticmethod
-    def cartesian(x, y): 
-        return Joystick(int(x), int(y))
-    
+
     #note that with how polar rounds the r and theta may not generate the x and y
     def r(self):
         return math.sqrt((self.x/32767)**2 + (self.y/32767)**2)
@@ -607,7 +603,7 @@ def addToFrameRange(token, frameRange:range, rowIndex):
                 previous_input_symbol = '!' in token
                 current_symbol = '@' in token
                 if "x" in prefix:
-                    coords = Joystick.cartesian(int(token.split(";")[0])/32767, int(token.split(";")[1])/32767)
+                    coords = Joystick(int(token.split(";")[0]), int(token.split(";")[1]))
                     for j in frameRange:
                         if right: script.getFrames(player_two)[j].right_stick = coords
                         if left: script.getFrames(player_two)[j].left_stick = coords
@@ -1023,8 +1019,7 @@ while (loop or do_once):
         if script.change_stage_name:
             writeCmdGo(outf,script.scenario_no,0,False,script.change_stage_name,script.change_stage_id)
             
-        if script.startPosition.x != 0 or script.startPosition.y != 0 or script.startPosition.z != 0:
-            writeCmdTp(outf,script.startPosition,Quat4f.unit(),False)
+
             
         # reset every controller state
         writeCmdController(outf,0,int(0).to_bytes(7,"little"),Joystick(0,0),Joystick(0,0)) 
@@ -1037,6 +1032,8 @@ while (loop or do_once):
             if frame.step > prevFrame:
                 prevFrame = frame.step
                 writeCmdFrame(outf,frame.step)
+                if frame.step == 0 and(script.startPosition.x != 0 or script.startPosition.y != 0 or script.startPosition.z != 0):
+                    writeCmdTp(outf,script.startPosition,Quat4f.unit(),False)
                 
             writeCmdController(outf,frame.second_player,frame.buttons.to_bytes(7,"little"),frame.left_stick,frame.right_stick)
                    
