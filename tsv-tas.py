@@ -989,8 +989,8 @@ while (loop or do_once):
         outf:FileIO = cast(FileIO,open(outfile, "w"))
         for frame in script.frames:
             outf.write(str(frame.step) + " " + nxTAS_Buttons(frame.buttons) + " "
-                    + str(int(frame.left_stick.x * 32767)) + ";" + str(int(frame.left_stick.y * 32767)) + " "
-                    + str(int(frame.right_stick.x * 32767)) + ";" + str(int(frame.right_stick.y * 32767)) + '\n')
+                    + str(frame.left_stick.x) + ";" + str(frame.left_stick.y) + " "
+                    + str(frame.right_stick.x) + ";" + str(frame.right_stick.y) + '\n')
 
     elif stas:
         size:int = 0
@@ -1018,8 +1018,6 @@ while (loop or do_once):
         
         if script.change_stage_name:
             writeCmdGo(outf,script.scenario_no,0,False,script.change_stage_name,script.change_stage_id)
-            
-
             
         # reset every controller state
         writeCmdController(outf,0,int(0).to_bytes(7,"little"),Joystick(0,0),Joystick(0,0)) 
