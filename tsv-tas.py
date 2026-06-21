@@ -90,6 +90,20 @@ class Vector3f:
         #return Vector3f(0, -1, 0)
         return Vector3f(0, 0, 0)
 
+def vec3fNEQ0(vec1:Vector3f)->bool:
+    vec2 = Vector3f.zero()
+    if vec1 is None:
+        return True
+    return not (math.isclose(vec1.x, vec2.x) and math.isclose(vec1.y, vec2.y) and math.isclose(vec1.z, vec2.z))
+
+def vec3fEQ(vec1:Vector3f, vec2:Vector3f)->bool:
+    if vec1 is None and vec2 is None:
+        return True
+    if vec1 is None or vec2 is None:
+        return False
+    return (math.isclose(vec1.x, vec2.x) and math.isclose(vec1.y, vec2.y) and math.isclose(vec1.z, vec2.z))
+
+
 @dataclass
 class Quat4f:
     x:float
@@ -117,7 +131,7 @@ class Joystick:
     
     @staticmethod
     def cartesian(x, y): 
-        return Joystick(x, y)
+        return Joystick(int(x), int(y))
     
     #note that with how polar rounds the r and theta may not generate the x and y
     def r(self):
@@ -985,6 +999,10 @@ while (loop or do_once):
     elif stas:
         size:int = 0
         prevFrame:int = -1
+        prevMotion:list[list[list[Vector3f]]] = [ # player, left/right, accel/gyro
+            [[Vector3f.zero(),Vector3f.zero()],[Vector3f.zero(),Vector3f.zero()]],
+            [[Vector3f.zero(),Vector3f.zero()],[Vector3f.zero(),Vector3f.zero()]]]
+
         outf = cast(FileIO,open(outfile,"wb"))
         # File Header
         size += outf.write(b"STAS")
@@ -1007,6 +1025,12 @@ while (loop or do_once):
             
         if script.startPosition.x != 0 or script.startPosition.y != 0 or script.startPosition.z != 0:
             writeCmdTp(outf,script.startPosition,Quat4f.unit(),False)
+            
+        # reset every controller state
+        writeCmdController(outf,0,int(0).to_bytes(7,"little"),Joystick(0,0),Joystick(0,0)) 
+        writeCmdController(outf,1,int(0).to_bytes(7,"little"),Joystick(0,0),Joystick(0,0))
+        writeCmdMotion(outf,0,2,Vector3f.zero(),Vector3f.zero())
+        writeCmdMotion(outf,1,2,Vector3f.zero(),Vector3f.zero())
 
         for frame in script.frames:
             # print(f"{frame.step}, {prevFrame}")
@@ -1014,9 +1038,15 @@ while (loop or do_once):
                 prevFrame = frame.step
                 writeCmdFrame(outf,frame.step)
                 
-            writeCmdController(outf,1 if frame.second_player else 0,frame.buttons.to_bytes(7,"little"),frame.left_stick,frame.right_stick)
-            writeCmdMotion(outf,1 if frame.second_player else 0,0,frame.accel_left,frame.gyro_left.ang_vel)
-            writeCmdMotion(outf,1 if frame.second_player else 0,1,frame.accel_right,frame.gyro_right.ang_vel)
+            writeCmdController(outf,frame.second_player,frame.buttons.to_bytes(7,"little"),frame.left_stick,frame.right_stick)
+                   
+            if (vec3fNEQ0(frame.accel_left) or vec3fNEQ0(frame.gyro_left.ang_vel)) or (vec3fNEQ0(prevMotion[frame.second_player][0][0])or vec3fNEQ0(prevMotion[frame.second_player][0][1])):
+                writeCmdMotion(outf,frame.second_player,0,frame.accel_left,frame.gyro_left.ang_vel)
+                prevMotion[frame.second_player][0]=[frame.accel_left,frame.gyro_left.ang_vel]
+            
+            if vec3fNEQ0(frame.accel_right) or vec3fNEQ0(frame.gyro_right.ang_vel) or (vec3fNEQ0(prevMotion[frame.second_player][1][0])or vec3fNEQ0(prevMotion[frame.second_player][1][1])):
+                writeCmdMotion(outf,frame.second_player,1,frame.accel_right,frame.gyro_right.ang_vel)
+                prevMotion[frame.second_player][1]=[frame.accel_right,frame.gyro_right.ang_vel]
         
     
     else:
