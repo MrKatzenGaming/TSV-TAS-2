@@ -22,6 +22,8 @@ The following options can be used on the command line to customize the output:
 
 ```-n``` nx-TAS: Generates a nx-TAS script file (for use with smo-practice) instead of a binary script file
 
+```-s``` STAS: Generates an STAS script file (for use with newer LunaKit) instead of a binary script file
+
 ```-e``` Skip empty (nx-TAS only): Skips frames with no inputs in the output file to make the file smaller (currently only supported for compiling nx-TAS scripts)
 
 ```-l``` Loop: Allows you to press enter to keep re-generating the script instead of rerunning the command
