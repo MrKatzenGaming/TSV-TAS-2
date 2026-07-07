@@ -54,6 +54,8 @@ if same_path:
     outfile = infile[0 : infile.rindex(".")]
     if nxtas:
         outfile += ".txt"
+    elif stas:
+        outfile += ".stas"
 
 # if True, can set angular velocity independently of rotation, if False angular velocity calculated from rotation
 independent_gyro = False
@@ -214,12 +216,12 @@ class Frame:
             self.buttons,
             self.buttonsOn,
             self.buttonsOff,
-            self.left_stick.r,
-            self.left_stick.theta,
+            self.left_stick.r(),
+            self.left_stick.theta(),
             self.left_stick.x,
             self.left_stick.y,
-            self.right_stick.r,
-            self.right_stick.theta,
+            self.right_stick.r(),
+            self.right_stick.theta(),
             self.right_stick.x,
             self.right_stick.y,
             self.accel_left.x,
@@ -252,6 +254,7 @@ class Frame:
             avr.x,
             avr.y,
             avr.z,
+            script.commands[self.step]
         ]
         return map(str, values)
 
@@ -266,6 +269,7 @@ class Script:
     frames: list[Frame] = field(default_factory=list)
     frames_P1: list[Frame] = field(default_factory=list)
     frames_P2: list[Frame] = field(default_factory=list)
+    commands: list[list[str]] = field(default_factory=list)
 
     def getFrames(self, player_two):
         if player_two:
@@ -291,6 +295,8 @@ class Script:
                     False,
                 )
             )
+        for j in range(len(self.commands), end):
+            self.commands.append([])
         if self.is_two_player:
             for j in range(len(self.frames_P2), end):
                 self.frames_P2.append(
@@ -1115,6 +1121,26 @@ def addToggle(token, indexWrite, on):
         )
 
 
+def eulerToQuat(euler_deg: Vector3f) -> Quat4f:
+    quat = Quat4f.unit()
+    euler.x = math.radians(euler_deg.x)
+    euler.y = math.radians(euler_deg.y)
+    euler.z = math.radians(euler_deg.z)
+    cy = math.cos(euler.y / 2);
+    sy = math.sin(euler.y / 2);
+    cp = math.cos(euler.z / 2);
+    sp = math.sin(euler.z / 2);
+    cr = math.cos(euler.x / 2);
+    sr = math.sin(euler.x / 2);
+
+    quat.w = cr * cp * cy + sr * sp * sy;
+    quat.x = sr * cp * cy - cr * sp * sy;
+    quat.z = cr * sp * cy + sr * cp * sy;
+    quat.y = cr * cp * sy - sr * sp * cy;
+
+    return quat
+
+
 def writeCommand(file: FileIO, type: int, size: int, data: bytes) -> None:
     file.write(struct.pack("<H", type))
     file.write(size.to_bytes(6, "little"))
@@ -1348,6 +1374,11 @@ while loop or do_once:
                         except:
                             lineInNumber += 1
                             continue
+                elif first[0] == "/" and first[1] != "/": # commands
+                    script.addFrames(indexStart + 1)
+                    script.commands[indexStart].append(first[1:])
+                    lineInNumber += 1
+                    continue
                 else:
                     try:
                         lineInDuration = int(
@@ -1439,7 +1470,7 @@ while loop or do_once:
         debugFile = open(outfile + "-debug.csv", "w")
 
         debugFile.write(
-            "Frame,2ndPlayer,Buttons,ButtonsOn,ButtonsOff,lx.r,ls.theta,ls.x,ls.y,rs.r,rs.theta,rs.x,rs.y,la.x,la.y,la.z,ra.x,ra.y,ra.z,lg.r.xx,lg.r.xy,lg.r.xz,lg.r.yx,lg.r.yy,lg.r.yz,lg.r.zx,lg.r.zy,lg.r.zz,lg.v.x,lg.v.y,lg.v.z,rg.r.xx,rg.r.xy,rg.r.xz,rg.r.yx,rg.r.yy,rg.r.yz,rg.r.zx,rg.r.zy,rg.r.zz,rg.v.x,rg.v.y,rg.v.z\n"
+            "Frame,2ndPlayer,Buttons,ButtonsOn,ButtonsOff,lx.r,ls.theta,ls.x,ls.y,rs.r,rs.theta,rs.x,rs.y,la.x,la.y,la.z,ra.x,ra.y,ra.z,lg.r.xx,lg.r.xy,lg.r.xz,lg.r.yx,lg.r.yy,lg.r.yz,lg.r.zx,lg.r.zy,lg.r.zz,lg.v.x,lg.v.y,lg.v.z,rg.r.xx,rg.r.xy,rg.r.xz,rg.r.yx,rg.r.yy,rg.r.yz,rg.r.zx,rg.r.zy,rg.r.zz,rg.v.x,rg.v.y,rg.v.z,Command\n"
         )
         for i in range(len(script.frames)):
             csv_writer = csv.writer(debugFile, delimiter=",")
@@ -1518,7 +1549,7 @@ while loop or do_once:
 
         for frame in script.frames:
             # print(f"{frame.step}, {prevFrame}")
-            if frame.step > prevFrame:
+            if frame.step > prevFrame: #do only for 1P frames
                 prevFrame = frame.step
                 writeCmdFrame(outf, frame.step)
                 if frame.step == 0 and (
@@ -1527,6 +1558,33 @@ while loop or do_once:
                     or script.startPosition.z != 0
                 ):
                     writeCmdTp(outf, script.startPosition, Quat4f.unit(), False)
+                # parse commands
+                for command_str in script.commands[frame.step]: # this relies on every step being included but that is okay
+                    tokens = command_str.split(" ")
+                    command = tokens[0]
+                    if debug:
+                        print("Parsing command: " + str(command))
+                    if command == "tp":
+                        euler = Vector3f.zero()
+                        quat = Quat4f.unit()
+                        if len(tokens) in (4, 5, 7, 8):
+                            try:
+                                x, y, z = map(float, tokens[1:4])
+                                if len(tokens) == 5 or len(tokens) == 7:
+                                    if len(tokens) == 5:
+                                        euler.y = float(tokens[4])
+                                    elif len(tokens) == 7:
+                                        euler.x, euler.y, euler.z = map(float, tokens[4:7])
+                                    quat = eulerToQuat(euler)
+                                elif len(tokens) == 8:
+                                    quat.x, quat.y, quat.z, quat.w = map(float, tokens[4:8])
+                                writeCmdTp(outf, Vector3f(x, y, z), quat, False)
+                                if debug:
+                                    print("Quat: " + str(quat))
+                            except:
+                                sys.exit("Error: /tp coordinates must be numbers")
+                        else:
+                            sys.exit("Error: incorrect number of args for /tp")
 
             writeCmdController(
                 outf,
