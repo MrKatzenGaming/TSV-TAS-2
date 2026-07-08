@@ -160,6 +160,9 @@ class Joystick:
 
     def theta(self):
         return math.degrees(math.atan2(self.y / 32767, self.x / 32767))
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
 
 
 @dataclass
@@ -1503,6 +1506,10 @@ while loop or do_once:
             [[Vector3f.zero(), Vector3f.zero()], [Vector3f.zero(), Vector3f.zero()]],
             [[Vector3f.zero(), Vector3f.zero()], [Vector3f.zero(), Vector3f.zero()]],
         ]
+        prevController: list[list[object]] = [ # player, button/left joystick/right joystick
+            [0, Joystick.zero(), Joystick.zero()],
+            [0, Joystick.zero(), Joystick.zero()],
+        ]
 
         outf = cast(FileIO, open(outfile, "wb"))
         # File Header
@@ -1564,7 +1571,8 @@ while loop or do_once:
                     command = tokens[0]
                     if debug:
                         print("Parsing command: " + str(command))
-                    if command == "tp":
+                    if command == "tp" or command == "ctp":
+                        isCap = command == "ctp"
                         euler = Vector3f.zero()
                         quat = Quat4f.unit()
                         if len(tokens) in (4, 5, 7, 8):
@@ -1578,21 +1586,30 @@ while loop or do_once:
                                     quat = eulerToQuat(euler)
                                 elif len(tokens) == 8:
                                     quat.x, quat.y, quat.z, quat.w = map(float, tokens[4:8])
-                                writeCmdTp(outf, Vector3f(x, y, z), quat, False)
+                                writeCmdTp(outf, Vector3f(x, y, z), quat, isCap)
                                 if debug:
                                     print("Quat: " + str(quat))
                             except:
-                                sys.exit("Error: /tp coordinates must be numbers")
+                                sys.exit(f"Error: /{command} coordinates must be numbers")
                         else:
-                            sys.exit("Error: incorrect number of args for /tp")
+                            sys.exit(f"Error: incorrect number of args for /{command}")
 
-            writeCmdController(
-                outf,
-                frame.second_player,
-                frame.buttons.to_bytes(7, "little"),
-                frame.left_stick,
-                frame.right_stick,
-            )
+            # only write controller inputs if they differ
+            if (prevController[frame.second_player][0] != frame.buttons) or (
+                prevController[frame.second_player][1] != frame.left_stick or
+                prevController[frame.second_player][2] != frame.right_stick
+            ):
+                writeCmdController(
+                    outf,
+                    frame.second_player,
+                    frame.buttons.to_bytes(7, "little"),
+                    frame.left_stick,
+                    frame.right_stick,
+                )
+                if debug:
+                    print("Wrote frame " + str(frame.step) + ", P2: " + str(frame.second_player))
+            
+            prevController[frame.second_player] = [frame.buttons, frame.left_stick, frame.right_stick]
 
             if (vec3fNEQ0(frame.accel_left) or vec3fNEQ0(frame.gyro_left.ang_vel)) or (
                 vec3fNEQ0(prevMotion[frame.second_player][0][0])
