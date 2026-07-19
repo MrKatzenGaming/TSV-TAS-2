@@ -136,12 +136,14 @@ class Quat4f:
 
 @dataclass
 class Joystick:
+    r: float
+    theta: float
     x: int
     y: int
 
     @staticmethod
     def zero():
-        return Joystick(0, 0)
+        return Joystick(0, 0, 0, 0)
 
     @staticmethod
     def polar(
@@ -150,16 +152,15 @@ class Joystick:
         r = r_theta[0]
         theta = r_theta[1]
         return Joystick(
+            r,
+            theta,
             int(32767 * r * math.cos(math.radians(theta))),
             int(32767 * r * math.sin(math.radians(theta))),
         )
-
-    # note that with how polar rounds the r and theta may not generate the x and y
-    def r(self):
-        return math.sqrt((self.x / 32767) ** 2 + (self.y / 32767) ** 2)
-
-    def theta(self):
-        return math.degrees(math.atan2(self.y / 32767, self.x / 32767))
+    
+    @staticmethod
+    def cartesian(x, y): #note that with how polar rounds the r and theta may not generate the x and y
+        return Joystick(math.sqrt(x**2 + y**2) / 32767, math.degrees(math.atan2(y, x)), x, y)
     
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
@@ -219,12 +220,12 @@ class Frame:
             self.buttons,
             self.buttonsOn,
             self.buttonsOff,
-            self.left_stick.r(),
-            self.left_stick.theta(),
+            self.left_stick.r,
+            self.left_stick.theta,
             self.left_stick.x,
             self.left_stick.y,
-            self.right_stick.r(),
-            self.right_stick.theta(),
+            self.right_stick.r,
+            self.right_stick.theta,
             self.right_stick.x,
             self.right_stick.y,
             self.accel_left.x,
@@ -618,8 +619,8 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
         r_token = token[0 : token.index(";")]
         theta_token = token[token.index(";") + 1 :]
         if prev_frame is not None:
-            r_token, theta_token = evaluateLast(r_token, prev_stick.r()), evaluateLast(
-                theta_token, prev_stick.theta()
+            r_token, theta_token = evaluateLast(r_token, prev_stick.r), evaluateLast(
+                theta_token, prev_stick.theta - ls_offset
             )
         if offset_from_row_index is not None:
             r_token, theta_token = evaluateCurrentFrame(
@@ -628,7 +629,7 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
         r, theta = float(r_token), float(theta_token)
     else:  # (r)
         if prev_frame is not None:
-            token = evaluateLast(token, prev_stick.theta())
+            token = evaluateLast(token, prev_stick.theta - ls_offset)
         if offset_from_row_index is not None:
             token = evaluateCurrentFrame(token, offset_from_row_index)
         theta = float(token)
@@ -928,9 +929,7 @@ def addToFrameRange(token, frameRange: range, rowIndex):
                 previous_input_symbol = "!" in token
                 current_symbol = "@" in token
                 if "x" in prefix:
-                    coords = Joystick(
-                        int(token.split(";")[0]), int(token.split(";")[1])
-                    )
+                    coords = Joystick.cartesian(int(token.split(";")[0]), int(token.split(";")[1]))
                     for j in frameRange:
                         if right:
                             script.getFrames(player_two)[j].right_stick = coords
@@ -1359,10 +1358,9 @@ while loop or do_once:
                                 script.is_two_player = True
                                 is_two_player = True
 
-                        # other variables
-                        else:
-                            value = prepareToken(value, True, 0)
-                            vars.update({var: value})
+                        # add variable values to dictionary
+                        value = prepareToken(value, True, 0)
+                        vars.update({var: value})
                         lineInNumber += 1
                         continue
                     else:
