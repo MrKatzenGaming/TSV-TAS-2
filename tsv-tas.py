@@ -335,11 +335,11 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
     if ';' in token: #(r; theta)
         r_token = token[0:token.index(';')]
         theta_token = token[token.index(';') + 1:]
-        if prev_frame is not None: r_token, theta_token = evaluateLast(r_token, prev_stick.r), evaluateLast(theta_token, prev_stick.theta)
+        if prev_frame is not None: r_token, theta_token = evaluateLast(r_token, prev_stick.r), evaluateLast(theta_token, prev_stick.theta - ls_offset)
         if offset_from_row_index is not None: r_token, theta_token = evaluateCurrentFrame(r_token, offset_from_row_index), evaluateCurrentFrame(theta_token, offset_from_row_index)
         r, theta = float(r_token), float(theta_token)
     else:# (r)
-        if prev_frame is not None: token = evaluateLast(token, prev_stick.theta)
+        if prev_frame is not None: token = evaluateLast(token, prev_stick.theta - ls_offset)
         if offset_from_row_index is not None: token = evaluateCurrentFrame(token, offset_from_row_index)
         theta = float(token)
     theta += ls_offset
