@@ -762,10 +762,9 @@ while (loop or do_once):
                                 script.is_two_player = True
                                 is_two_player = True
 
-                        #other variables
-                        else:
-                            value = prepareToken(value, True, 0)
-                            vars.update({var: value})
+                        #store all variables in a list to be looked up later
+                        value = prepareToken(value, True, 0)
+                        vars.update({var: value})
                         lineInNumber += 1
                         continue
                     else:
