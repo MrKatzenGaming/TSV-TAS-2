@@ -1393,7 +1393,8 @@ while loop or do_once:
                             lineInNumber += 1
                             continue
                 elif first[0] == "/" and first[1] != "/":  # commands
-                    script.addFrames(indexStart + 1)
+                    for _ in range(len(script.commands), indexStart + 1):
+                        script.commands.append([])
                     script.commands[indexStart].append(first[1:])
                     lineInNumber += 1
                     continue
