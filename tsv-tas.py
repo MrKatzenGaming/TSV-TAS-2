@@ -1217,6 +1217,12 @@ def writeCmdAbsStick(file: FileIO, enable: bool) -> None:
     writeCommand(file, 0xC004, 0x4, data)
 
 
+def writeCmdSpeedup(file: FileIO, speed: int) -> None:
+    data: bytes = struct.pack("<b", speed)
+    data += struct.pack("<3x")
+    writeCommand(file, 0xC005, 0x4, data)
+
+
 def align_up(value, alignment):
     return ((value + alignment - 1) // alignment) * alignment
 
@@ -1628,6 +1634,12 @@ while loop or do_once:
                         if len(tokens) == 2:
                             enable: bool = tokens[1] in ["true", "1", "on", "y", "yes"]
                             writeCmdAbsStick(outf, enable)
+                        else:
+                            sys.exit(f"Error: incorrect number of args for /{command}")
+                    elif command == "speed":
+                        if len(tokens) == 2:
+                            speed: int = int(tokens[1])
+                            writeCmdSpeedup(outf, speed)
                         else:
                             sys.exit(f"Error: incorrect number of args for /{command}")
             # only write controller inputs if they differ
