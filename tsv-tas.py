@@ -1639,6 +1639,10 @@ while loop or do_once:
                     elif command == "speed":
                         if len(tokens) == 2:
                             speed: int = int(tokens[1])
+                            if speed > 10 or speed < 1:
+                                sys.exit(
+                                    f"Error: speed has to be between 1 and 10 inclusive"
+                                )
                             writeCmdSpeedup(outf, speed)
                         else:
                             sys.exit(f"Error: incorrect number of args for /{command}")
