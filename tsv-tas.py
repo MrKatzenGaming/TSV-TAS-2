@@ -1642,6 +1642,11 @@ while loop or do_once:
                             writeCmdSpeedup(outf, speed)
                         else:
                             sys.exit(f"Error: incorrect number of args for /{command}")
+                    elif command == "pause":
+                        if len(tokens) == 1:
+                            writeCommand(outf, 0xC006, 0, b"")
+                        else:
+                            sys.exit(f"Error: incorrect number of args for /{command}")
             # only write controller inputs if they differ
             if (prevController[frame.second_player][0] != frame.buttons) or (
                 prevController[frame.second_player][1] != frame.left_stick
