@@ -1211,6 +1211,12 @@ def writeCmdTp(file: FileIO, pos: Vector3f, rot: Quat4f, isCap: bool) -> None:
     writeCommand(file, 0xC003 if isCap else 0xC002, 0xC + 0x10, data)
 
 
+def writeCmdAbsStick(file: FileIO, enable: bool) -> None:
+    data: bytes = struct.pack("<?", enable)
+    data += struct.pack("<3x")
+    writeCommand(file, 0xC004, 0x4, data)
+
+
 def align_up(value, alignment):
     return ((value + alignment - 1) // alignment) * alignment
 
@@ -1618,7 +1624,12 @@ while loop or do_once:
                                 )
                         else:
                             sys.exit(f"Error: incorrect number of args for /{command}")
-
+                    elif command == "absStick":
+                        if len(tokens) == 2:
+                            enable: bool = tokens[1] in ["true", "1", "on", "y", "yes"]
+                            writeCmdAbsStick(outf, enable)
+                        else:
+                            sys.exit(f"Error: incorrect number of args for /{command}")
             # only write controller inputs if they differ
             if (prevController[frame.second_player][0] != frame.buttons) or (
                 prevController[frame.second_player][1] != frame.left_stick
