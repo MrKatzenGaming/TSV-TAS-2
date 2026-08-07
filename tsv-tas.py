@@ -1188,6 +1188,10 @@ def writeCmdMotion(
     writeCommand(file, 2, 0x1C, data)
 
 
+def writeCmdSaveFile(file:FileIO,id:int,reload:bool) -> None:
+    data:bytes = struct.pack("<b?",id,reload)
+    writeCommand(file,0xC000,0x2,data)
+
 def writeCmdGo(
     file: FileIO,
     scenario: int,
@@ -1650,6 +1654,16 @@ while loop or do_once:
                     elif command == "pause":
                         if len(tokens) == 1:
                             writeCommand(outf, 0xC006, 0, b"")
+                        else:
+                            sys.exit(f"Error: incorrect number of args for /{command}")
+                    elif command == "loadFile": 
+                        if len(tokens) == 2:
+                            writeCmdSaveFile(outf,int(tokens[1]),False)
+                        else:
+                            sys.exit(f"Error: incorrect number of args for /{command}")
+                    elif command == "reloadFile": 
+                        if len(tokens) == 1:
+                            writeCmdSaveFile(outf,0,True)
                         else:
                             sys.exit(f"Error: incorrect number of args for /{command}")
             # only write controller inputs if they differ
