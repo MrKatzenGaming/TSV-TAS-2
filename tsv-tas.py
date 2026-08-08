@@ -1226,6 +1226,10 @@ def writeCmdSpeedup(file: FileIO, speed: int) -> None:
     data += struct.pack("<3x")
     writeCommand(file, 0xC005, 0x4, data)
 
+def writeCmdDemo(file:FileIO, enable: bool) -> None: 
+    data:bytes = struct.pack("<?",enable)
+    data += struct.pack("<3x")
+    writeCommand(file,0xc007,0x4,data)
 
 def align_up(value, alignment):
     return ((value + alignment - 1) // alignment) * alignment
@@ -1664,6 +1668,12 @@ while loop or do_once:
                     elif command == "reloadFile": 
                         if len(tokens) == 1:
                             writeCmdSaveFile(outf,0,True)
+                        else:
+                            sys.exit(f"Error: incorrect number of args for /{command}")
+                    elif command == "demo":
+                        if len(tokens) == 2:
+                            enable: bool = tokens[1] in ["true", "1", "on", "y", "yes"]
+                            writeCmdDemo(outf, enable)
                         else:
                             sys.exit(f"Error: incorrect number of args for /{command}")
             # only write controller inputs if they differ
