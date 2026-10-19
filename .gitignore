@@ -6,3 +6,4 @@
 tsv-tas-placid.py
 .DS_Store
 test.py
+*pycache*
