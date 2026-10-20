@@ -26,14 +26,18 @@ def evaluateVariables(
 
 def evaluateMath(token: str, whole_token: bool) -> str:  # evaluates math expressions
     while match_obj := search(
-        "\\/[ \\(]*\\.?[0-9]", token
+        "\\/[ (]*\\.?[0-9]", token
     ):  # replace division / with ÷ to differentiate from loops
         token = token.replace(match_obj.group(), match_obj.group().replace("/", "÷"))
+    math_value = "[0-9,\\. \\+\\-\\*÷\\(\\)]"  # TODO: remove some escapes maybe
+    operator = "[\\+\\-\\*÷]"
     if whole_token:  # match math expressions that take up the whole token
-        math_regex = "^(([0-9,\\. \\+\\-\\*÷\\(\\)])+([\\+\\-\\*÷])([0-9,\\. \\+\\-\\*÷\\(\\)])+)$"
+        math_regex = f"^(({math_value})+({operator})({math_value})+)$"
         group = 1
     else:  # match math expressions that begin/end with parentheses, commas, brackets, or semicolons
-        math_regex = "([\\(\\,\\;\\[])(([0-9,\\. \\+\\-\\*÷\\(\\)])+([\\+\\-\\*÷])([0-9,\\. \\+\\-\\*÷\\(\\)])+)([\\)\\,\\;\\]])"
+        begin = "[\\(\\,\\;\\[]"
+        end = "[\\)\\,\\;\\]]"
+        math_regex = f"({begin})(({math_value})+({operator})({math_value})+)({end})"
         group = 2
     try:
         # evaluate math operations
