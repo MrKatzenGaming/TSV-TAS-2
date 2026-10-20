@@ -1,8 +1,10 @@
 from sys import exit
 from re import search
-from lib.classes import Joystick, Frame
-from lib.helpers import getStickPolar
+from lib.classes import Joystick, Frame, Vector3f, Quat4f
+from lib.helpers import getStickPolar, eulerToQuat
 from lib.script import addToggle, addToFrameRange
+from collections.abc import Collection
+from stas import *
 import lib.globals as g
 
 
@@ -16,7 +18,7 @@ def parseDuration(token, default):
             try:
                 duration = int(float(duration_str))  # rounds down floats
             except:
-                exit("Error: Invalid local duration in row " + g.lineInNumber)
+                exit("[parseDuration] Invalid local duration in row " + g.lineInNumber)
         token = token.replace(token[token.index("[") : token.index("]") + 1], "")
         return token.strip(), duration
     except:
@@ -52,7 +54,7 @@ def parseToken(token, indexWrite, duration, rowIndex, rowDuration):
         parseInterpolatedStick(token, indexWrite, duration)
     else:
         if duration == "?":
-            exit("Error: ? duration only allowed within sequences")
+            exit("[parseToken] ? duration only allowed within sequences")
         elif duration == "*":
             addToggle(token, indexWrite, True)
         elif duration == 0:
@@ -67,22 +69,15 @@ def parseToken(token, indexWrite, duration, rowIndex, rowDuration):
 
 def parseInterpolatedStick(token, indexStart, duration):
     if "@" in token:
-        exit(
-            "Error: Stick interpolation on line "
-            + str(g.lineInNumber)
-            + " cannot use @ symbol"
-        )
+
+        exit(f"[parseInterpolation] Cannot use @ Symbol (line {g.lineInNumber})")
     if duration < 0:
         exit(
-            "Error: Stick interpolation on line "
-            + str(g.lineInNumber)
-            + " cannot have negative duration"
+            f"[parseInterpolation] Cannot have negative duration (line {g.lineInNumber})"
         )
     if duration < 2:
         exit(
-            "Error: Stick interpolation on line "
-            + str(g.lineInNumber)
-            + " must have duration of at least 2"
+            f"[parseInterpolation] Must have duration of at least 2 (line {g.lineInNumber})"
         )
 
     player_two = "c" in token
@@ -137,7 +132,7 @@ def parseInterpolatedStick(token, indexStart, duration):
         if g.debug:
             print(e)
         exit(
-            "Error: Syntax error(s) on line "
+            "[parseInterpolation] Syntax error(s) on line "
             + str(g.lineInNumber)
             + " prevented script generation"
         )
@@ -149,7 +144,7 @@ def parseSequence(token, indexWrite, rowIndex, rowDuration):
         subtoken, duration = parseDuration(steps[i], 1)  # parse out duration
         if duration == "*":
             exit(
-                "Error: * not supported for durations within sequences (line "
+                "[parseSequence] * not supported for durations within sequences (line "
                 + str(g.lineInNumber)
                 + ")"
             )
@@ -164,19 +159,12 @@ def parseSequence(token, indexWrite, rowIndex, rowDuration):
 def parseLoop(token, indexWrite, duration, rowIndex, rowDuration):
     if duration == "*" or duration == "?":
         exit(
-            duration
-            + " not supported for durations within sequences (line "
-            + str(g.lineInNumber)
-            + ")"
+            f"[parseLoop] {duration} not supported for durations within sequences (line {g.lineInNumber})"
         )
     elif duration == 0:
         return
     elif duration < 0:
-        exit(
-            "Error: Loop on line "
-            + str(g.lineInNumber)
-            + " cannot have negative total duration"
-        )
+        exit(f"[parseLoop] cannot have negative total duration (line {g.lineInNumber})")
 
     remainingDuration = duration
     steps = token.split("/")
@@ -200,5 +188,5 @@ def parseLoop(token, indexWrite, duration, rowIndex, rowDuration):
                 )
                 remainingDuration -= durations[i]
             else:
-                exit("Error: Negative durations are not permitted within loops")
+                exit("[parseLoop] Negative durations are not permitted within loops")
             indexWrite += durations[i]

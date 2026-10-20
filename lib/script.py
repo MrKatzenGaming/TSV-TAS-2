@@ -15,7 +15,7 @@ def addToFrameRange(token, frameRange: range, rowIndex):
     g.script.addFrames(maxFrame + 1)
 
     if frameRange.start < 0 or frameRange.stop < -1:
-        exit("Error: Negative durations cannot go before frame 0")
+        exit("[addToFrameRange] Negative durations cannot go before frame 0")
 
     player_two = False
     token = token.strip()
@@ -203,13 +203,13 @@ def addToFrameRange(token, frameRange: range, rowIndex):
         if g.debug:
             print(e)
         exit(
-            "Syntax error(s) on line "
+            "[addToFrameRange] Syntax error(s) on line "
             + str(g.lineInNumber)
             + " prevented gScript generation"
         )
 
 
-# add a toggle for a button to be on indefinitely until its next input in the gScript ([*]) or a toggle to switch such a button off ([0]) – but the program will actually fill in the frames later
+# add a toggle for a button to be on indefinitely until its next input in the script ([*]) or a toggle to switch such a button off ([0]) – but the program will actually fill in the frames later
 def addToggle(token, indexWrite, on):
     try:
         player_two = "c" in token
@@ -224,7 +224,7 @@ def addToggle(token, indexWrite, on):
         if g.debug:
             print(e)
         exit(
-            "Syntax error(s) on line "
+            "[addToggle] Syntax error(s) on line "
             + str(g.lineInNumber)
             + " prevented gScript generation"
         )

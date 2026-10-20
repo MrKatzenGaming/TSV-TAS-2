@@ -15,7 +15,7 @@ def evaluateVariables(token, row_duration):  # evaluates all variables of form $
                 match_obj.group(), vars.get(match_obj.group().lower()[1:])
             )
         except:
-            exit("Error: Variable " + match_obj.group() + " not found")
+            exit("[evaluateVariables] Variable " + match_obj.group() + " not found")
 
     token = token.replace("#", str(row_duration))
 
