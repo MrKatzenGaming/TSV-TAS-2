@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from math import cos, sin, radians, atan2, sqrt, degrees, isclose
 from enum import IntEnum
 
-ANG_VEL_FACTOR = -3 / 200.0
+ANG_VEL_FACTOR: float = -3 / 200.0
 
 
 @dataclass
@@ -11,7 +11,7 @@ class Vector2f:
     y: float
 
     @staticmethod
-    def zero():
+    def zero() -> Vector2f:
         return Vector2f(0, 0)
 
 
@@ -21,8 +21,8 @@ class Vector2i:
     y: int
 
     @staticmethod
-    def zero():
-        return Vector2f(0, 0)
+    def zero() -> Vector2i:
+        return Vector2i(0, 0)
 
 
 @dataclass
@@ -32,26 +32,28 @@ class Vector3f:
     z: float
 
     @staticmethod
-    def zero():
+    def zero() -> Vector3f:
         return Vector3f(0, 0, 0)
 
     @staticmethod
-    def default_accel():
+    def default_accel() -> Vector3f:
         # return Vector3f(0, -1, 0)
         return Vector3f(0, 0, 0)
 
-    def __eq__(self, value):
-        if self is None and value is None:
+    def __eq__(self: Vector3f, other: object) -> bool:
+        if not isinstance(other, Vector3f):
+            raise NotImplementedError()
+        if self is None and other is None:
             return True
-        if self is None or value is None:
+        if self is None or other is None:
             return False
         return (
-            isclose(self.x, value.x)
-            and isclose(self.y, value.y)
-            and isclose(self.z, value.z)
+            isclose(self.x, other.x)
+            and isclose(self.y, other.y)
+            and isclose(self.z, other.z)
         )
 
-    def NEQ0(self):
+    def NEQ0(self: Vector3f) -> bool:
         if self is None:
             return True
         return not (isclose(self.x, 0) and isclose(self.y, 0) and isclose(self.z, 0))
@@ -65,7 +67,7 @@ class Quat4f:
     w: float
 
     @staticmethod
-    def unit():
+    def unit() -> Quat4f:
         return Quat4f(0, 0, 0, 0)
 
 
@@ -77,15 +79,17 @@ class Joystick:
     y: int
 
     @staticmethod
-    def zero():
+    def zero() -> Joystick:
         return Joystick(0, 0, 0, 0)
 
     @staticmethod
     def polar(
-        r_theta,
+        r_theta: tuple[float, float],
+    ) -> (
+        Joystick
     ):  # accepts pair with r and theta, snaps to nearest 2^16-representable float
-        r = r_theta[0]
-        theta = r_theta[1]
+        r: float = r_theta[0]
+        theta: float = r_theta[1]
         return Joystick(
             r,
             theta,
@@ -94,11 +98,13 @@ class Joystick:
         )
 
     @staticmethod
-    def cartesian(x, y):
+    def cartesian(x: int, y: int) -> Joystick:
         # note that with how polar rounds the r and theta may not generate the x and y
         return Joystick(sqrt(x**2 + y**2) / 32767, degrees(atan2(y, x)), x, y)
 
-    def __eq__(self, other):
+    def __eq__(self: Joystick, other: object) -> bool:
+        if not isinstance(other, Joystick):
+            raise NotImplementedError()
         return self.x == other.x and self.y == other.y
 
 
@@ -115,7 +121,7 @@ class Matrix33f:
     zz: float
 
     @staticmethod
-    def ident():
+    def ident() -> Matrix33f:
         return Matrix33f(1, 0, 0, 0, 1, 0, 0, 0, 1)
 
 
@@ -126,7 +132,7 @@ class Gyro:  # default gyroscope rotation is 3x3 identity matrix
     ang_vel: Vector3f
 
     @staticmethod
-    def zero():
+    def zero() -> Gyro:
         return Gyro(Vector3f.zero(), Matrix33f.ident(), Vector3f.zero())
 
 
@@ -145,13 +151,13 @@ class Script:
     frames_P2: list[Frame] = field(default_factory=list)
     commands: list[list[str]] = field(default_factory=list)
 
-    def getFrames(self, player_two):
+    def getFrames(self: Script, player_two: bool) -> list[Frame]:
         if player_two:
             return self.frames_P2
         else:
             return self.frames_P1
 
-    def addFrames(self, end):  # add frames through frame end - 1
+    def addFrames(self: Script, end: int) -> None:  # add frames through frame end - 1
         for j in range(len(self.frames_P1), end):
             self.frames_P1.append(
                 Frame(
@@ -191,7 +197,7 @@ class Script:
                 )
 
     # merge player 1 and player 2 frames into one array called frames
-    def combineFrames(self):
+    def combineFrames(self: Script) -> None:
         if self.is_two_player:
             self.frames = []
             for j in range(0, len(self.frames_P1)):
@@ -216,7 +222,7 @@ class Frame:
     gyro_right: Gyro
     macro: bool
 
-    def toStrArray(self, script: Script):
+    def toStrArray(self: Frame, script: Script) -> map:
 
         dl = self.gyro_left.direction
         dr = self.gyro_right.direction
@@ -271,7 +277,7 @@ class Frame:
         return map(str, values)
 
     @staticmethod
-    def empty():
+    def empty() -> Frame:
         return Frame(
             0,
             False,

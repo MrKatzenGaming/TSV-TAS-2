@@ -138,8 +138,6 @@ while loop or do_once:
     indexStart = 0
     indexStop = 0
 
-    vars = dict()
-
     with open(infile) as f:
         prevLineInDuration = 1
         for lineIn in f:
@@ -167,7 +165,7 @@ while loop or do_once:
                         parseVariable(var, value)
                         # add variable values to dictionary
                         value = prepareToken(value, True, 0)
-                        vars.update({var: value})
+                        g.vars.update({var: value})
                         g.lineInNumber += 1
                         continue
                     else:

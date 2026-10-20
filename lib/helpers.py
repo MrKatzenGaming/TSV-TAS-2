@@ -1,5 +1,6 @@
 from lib.classes import (
     STASButton,
+    Frame,
     Button,
     Vector3f,
     Matrix33f,
@@ -12,12 +13,12 @@ from lib.evaluation import evaluateLast, evaluateCurrentFrame
 import lib.globals as g
 
 
-def to_f2(f4):  # stores float with 2 byte precision if uncommented
+def to_f2(f4: float) -> float:  # stores float with 2 byte precision if uncommented
     # return int(f4 * 32767) / 32767.0
     return f4
 
 
-def getButtonBin(button: str, stas: bool):
+def getButtonBin(button: str, stas: bool) -> int:
     button = button.lower().strip()
     if len(button) > 1 and button[0] == "c":
         button = button[1:]  # 2P button
@@ -86,7 +87,7 @@ def getButtonBin(button: str, stas: bool):
 
 def nxTAS_Buttons(
     buttons: int, stas: bool
-):  # converts button int into string list of buttons for nx-TAS format
+) -> str:  # converts button int into string list of buttons for nx-TAS format
     button_list = []
     if buttons == 0:
         return "NONE"
@@ -157,9 +158,14 @@ def nxTAS_Buttons(
 
 # prev_frame is used to evaluate ! characters if it is not None
 # offset_from_row_index is used to evaluate @ characters if it is not None
-def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
-    r = 1.0
-    theta = 0.0
+def getStickPolar(
+    token: str,
+    right_stick: bool,
+    prev_frame: Frame | None,
+    offset_from_row_index: int | None,
+) -> tuple[float, float]:
+    r: float = 1.0
+    theta: float = 0.0
     if prev_frame is not None:  # contains !
         if right_stick:
             prev_stick = prev_frame.right_stick
@@ -188,7 +194,7 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
 
 
 # euler in degrees to rotation matrix
-def toRotationMatrix(euler: Vector3f):
+def toRotationMatrix(euler: Vector3f) -> Matrix33f:
     euler_radians = Vector3f.zero()
     euler_radians.x, euler_radians.y, euler_radians.z = (
         radians(euler.x),
@@ -216,8 +222,8 @@ def toRotationMatrix(euler: Vector3f):
     )
 
 
-def getGyroValues(token):
-    all = token.split(
+def getGyroValues(token: str) -> Gyro:
+    all: list[str] = token.split(
         ";"
     )  # (pitch; yaw; roll) or #(pitch; yaw; roll; ang-x; ang-y; ang-z)
     ang_vel = Vector3f.zero()
@@ -234,7 +240,7 @@ def getGyroValues(token):
 
 
 # calculates needed angular velocities for all frames based on the gyroscope
-def calculateAngularVelocity(player_two):
+def calculateAngularVelocity(player_two: bool) -> None:
     euler_left_old, euler_right_old = (
         g.script.getFrames(player_two)[0].gyro_left.euler,
         g.script.getFrames(player_two)[0].gyro_right.euler,

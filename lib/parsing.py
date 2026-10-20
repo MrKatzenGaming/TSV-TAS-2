@@ -9,16 +9,19 @@ import lib.globals as g
 
 
 # parses the duration of a token
-def parseDuration(token, default):
+def parseDuration(token: str, default: int) -> tuple:
     try:
         duration_str = token[token.index("[") + 1 : token.index("]")].strip()
         if duration_str == "?" or duration_str == "*":  # special duration characters
-            duration = duration_str
+            duration: str | int = duration_str
         else:
             try:
                 duration = int(float(duration_str))  # rounds down floats
             except:
-                exit("[parseDuration] Invalid local duration in row " + g.lineInNumber)
+                exit(
+                    "[parseDuration] Invalid local duration in row "
+                    + str(g.lineInNumber)
+                )
         token = token.replace(token[token.index("[") : token.index("]") + 1], "")
         return token.strip(), duration
     except:
@@ -26,7 +29,7 @@ def parseDuration(token, default):
 
 
 # parses token into subtokens
-def parseToken(token, indexWrite, duration, rowIndex, rowDuration):
+def parseToken(token: str, indexWrite: int, duration, rowIndex: int, rowDuration: int):
     if g.debug:
         print("Parsing Token: " + token)
         print("Write Index: " + str(indexWrite))
@@ -67,7 +70,7 @@ def parseToken(token, indexWrite, duration, rowIndex, rowDuration):
             )
 
 
-def parseInterpolatedStick(token, indexStart, duration):
+def parseInterpolatedStick(token: str, indexStart: int, duration: int):
     if "@" in token:
 
         exit(f"[parseInterpolation] Cannot use @ Symbol (line {g.lineInNumber})")
@@ -138,7 +141,7 @@ def parseInterpolatedStick(token, indexStart, duration):
         )
 
 
-def parseSequence(token, indexWrite, rowIndex, rowDuration):
+def parseSequence(token: str, indexWrite: int, rowIndex: int, rowDuration: int):
     steps = token.split("|")
     for i in range(len(steps)):
         subtoken, duration = parseDuration(steps[i], 1)  # parse out duration
@@ -156,20 +159,21 @@ def parseSequence(token, indexWrite, rowIndex, rowDuration):
         indexWrite += duration
 
 
-def parseLoop(token, indexWrite, duration, rowIndex, rowDuration):
+def parseLoop(token: str, indexWrite: int, duration, rowIndex: int, rowDuration: int):
     if duration == "*" or duration == "?":
         exit(
-            f"[parseLoop] {duration} not supported for durations within sequences (line {g.lineInNumber})"
+            f"[parseLoop] {duration} not supported for durations within loops (line {g.lineInNumber})"
         )
-    elif duration == 0:
+
+    if duration == 0:
         return
     elif duration < 0:
         exit(f"[parseLoop] cannot have negative total duration (line {g.lineInNumber})")
 
-    remainingDuration = duration
-    steps = token.split("/")
-    subtokens = []
-    durations = []
+    remainingDuration: int = duration
+    steps: list[str] = token.split("/")
+    subtokens: list[str] = []
+    durations: list[int] = []
     for i in range(len(steps)):
         subtoken, duration = parseDuration(steps[i], 1)  # parse out duration
         subtokens.append(subtoken)
@@ -207,7 +211,7 @@ COMMAND_ARG_COUNT: dict[str, Collection[int]] = {
 }
 
 
-def parseCommand(file: BytesIO, tokens: list[str]):
+def parseCommand(file: BytesIO, tokens: list[str]) -> None:
     command: str = tokens[0].lower().strip()
     args = tokens[1:]
     if g.debug:

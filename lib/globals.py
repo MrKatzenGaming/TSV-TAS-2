@@ -9,5 +9,5 @@ independentGyro: bool = False
 motionOffset: int = 0  # shifts motion macros by this amount
 lsOffset: float = 0  # shifts left stick inputs by this number of degrees
 lineInNumber: int = 1
-
+vars: dict[str, str] = dict()
 cmdCount: int = 0

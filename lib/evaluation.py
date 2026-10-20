@@ -1,28 +1,30 @@
 from re import search
 from sys import exit
+import lib.globals as g
 
 
-def prepareToken(token, first_column, row_duration):
+def prepareToken(token: str, first_column: bool, row_duration: int) -> str:
     if token[:2] == "//" or token[:2] == '"//':  # ignore comment
         return ""
     return evaluateMath(evaluateVariables(token, row_duration), first_column)
 
 
-def evaluateVariables(token, row_duration):  # evaluates all variables of form $ or #
+def evaluateVariables(
+    token: str, row_duration: int
+) -> str:  # evaluates all variables of form $ or #
     while match_obj := search("\\$\\w+", token):  # replace variables with their values
-        try:
-            token = token.replace(
-                match_obj.group(), vars.get(match_obj.group().lower()[1:])
-            )
-        except:
+        name = match_obj.group().lower()[1:]
+        value = g.vars.get(name)
+        if value is None:
             exit("[evaluateVariables] Variable " + match_obj.group() + " not found")
+        token = token.replace(match_obj.group(), value)
 
     token = token.replace("#", str(row_duration))
 
     return token.lower()
 
 
-def evaluateMath(token, whole_token):  # evaluates math expressions
+def evaluateMath(token: str, whole_token: bool) -> str:  # evaluates math expressions
     while match_obj := search(
         "\\/[ \\(]*\\.?[0-9]", token
     ):  # replace division / with ÷ to differentiate from loops
@@ -48,14 +50,14 @@ def evaluateMath(token, whole_token):  # evaluates math expressions
 
 
 def evaluateLast(
-    token, prev
+    token: str, prev: float
 ):  # replaces any ! marks with prev, then calls evaluateMath
     token = token.replace("!", str(prev))
     return evaluateMath(token, True)
 
 
 def evaluateCurrentFrame(
-    token, offset
+    token: str, offset: int
 ):  # replaces any @ marks with offset, then calls evaluateMath
     token = token.replace("@", str(offset))
     return evaluateMath(token, True)

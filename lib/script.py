@@ -4,7 +4,7 @@ from lib.helpers import getStickPolar, to_f2, getGyroValues, getButtonBin
 import lib.globals as g
 
 
-def addToFrameRange(token, frameRange: range, rowIndex):
+def addToFrameRange(token: str, frameRange: range, rowIndex: int) -> None:
     # first find start and end frames involved, add any additional frames as needed
     minFrame = maxFrame = 0
     for j in frameRange:
@@ -210,7 +210,7 @@ def addToFrameRange(token, frameRange: range, rowIndex):
 
 
 # add a toggle for a button to be on indefinitely until its next input in the script ([*]) or a toggle to switch such a button off ([0]) – but the program will actually fill in the frames later
-def addToggle(token, indexWrite, on):
+def addToggle(token: str, indexWrite: int, on: bool) -> None:
     try:
         player_two = "c" in token
         button_bin = getButtonBin(token, g.stas)
