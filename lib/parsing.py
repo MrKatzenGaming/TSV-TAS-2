@@ -195,12 +195,12 @@ def parseLoop(token, indexWrite, duration, rowIndex, rowDuration):
 COMMAND_ARG_COUNT: dict[str, Collection[int]] = {
     "tp": (3, 4, 6, 7),
     "ctp": (3, 4, 6, 7),
-    "absStick": (1,),
+    "absstick": (1,),
     "demo": (1,),
     "speed": (1,),
     "pause": (0,),
-    "loadFile": (1,),
-    "reloadFile": (0,),
+    "loadfile": (1,),
+    "reloadfile": (0,),
     "section": (1,),
     "msection": (1,),
     "csection": (1,),
@@ -208,7 +208,7 @@ COMMAND_ARG_COUNT: dict[str, Collection[int]] = {
 
 
 def parseCommand(file: FileIO, tokens: list[str]):
-    command: str = tokens[0]
+    command: str = tokens[0].lower().strip()
     args = tokens[1:]
     if g.debug:
         print("Parsing command: " + str(command))
@@ -236,7 +236,7 @@ def parseCommand(file: FileIO, tokens: list[str]):
             exit(f"[parseCommands] {command}: coordinates must be numbers")
         return
 
-    if command in ("absStick", "demo"):
+    if command in ("absstick", "demo"):
         enabled = args[0] in ("true", "1", "on", "y", "yes")
         if command == "absStick":
             writeCmdAbsStick(file, enabled)
@@ -261,7 +261,7 @@ def parseCommand(file: FileIO, tokens: list[str]):
         writeCommand(file, 0xC006, b"")
         return
 
-    if command == "loadFile":
+    if command == "loadsile":
         try:
             fileNum = int(args[0])
             if fileNum < 0 or fileNum > 4:
@@ -271,7 +271,7 @@ def parseCommand(file: FileIO, tokens: list[str]):
             exit("[parseCommands] loadFile: Supplied argument must be an integer")
         return
 
-    if command == "reloadFile":
+    if command == "reloadsile":
         writeCmdSaveFile(file, 0, True)
         return
 
