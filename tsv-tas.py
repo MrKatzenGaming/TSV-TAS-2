@@ -164,41 +164,7 @@ while loop or do_once:
                     if "=" in first:  # variable assignment
                         var = first[1 : first.index("=")].strip().lower()
                         value = first[first.index("=") + 1 :].strip()
-
-                        # script start variables
-                        if var == "stage":
-                            g.script.change_stage_name = value
-                        elif var == "entr" or var == "entrance":
-                            g.script.change_stage_id = value
-                        elif var == "scen" or var == "scenario":
-                            try:
-                                g.script.scenario_no = int(value)
-                            except:
-                                sys.exit("Error: Invalid scenario number")
-                        elif var == "independent_gyro" or var == "ind_gyro":
-                            if value.lower() == "true" or value.lower() == "t":
-                                g.independentGyro = True
-                        elif var == "pos" or var == "position":
-                            value = value[value.index("(") + 1 : value.index(")")]
-                            coords = value.split(";")
-                            g.script.startPosition.x = float(coords[0])
-                            g.script.startPosition.y = float(coords[1])
-                            g.script.startPosition.z = float(coords[2])
-                        elif var == "title":
-                            g.script.title = value
-                        elif var == "author":
-                            g.script.author = value
-                        elif var == "desc" or var == "description":
-                            g.script.description = value
-                        elif var == "motion_offset":
-                            g.motionOffset = int(value)
-                        elif var == "ls_offset":
-                            g.lsOffset = float(value)
-                        elif var == "is2p" or var == "is_two_player":
-                            if value.lower() == "true" or value.lower() == "t":
-                                g.script.is_two_player = True
-                                is_two_player = True
-
+                        parseVariable(var, value)
                         # add variable values to dictionary
                         value = prepareToken(value, True, 0)
                         vars.update({var: value})
