@@ -18,20 +18,20 @@ import lib.globals as g
 parser = argparse.ArgumentParser()
 parser.add_argument("infile", help="Input File")
 parser.add_argument("outfile", nargs="?", help="Output File")
-parser.add_argument("-f", "--ftp", action="store_true", help="Enables FTP")
-parser.add_argument("-d", "--debug", action="store_true", help="Enables Debug mode")
-parser.add_argument(
-    "-n", "--nxtas", action="store_true", help="Generates nxTAS scripts"
-)
-parser.add_argument("-e", "--noempty", action="store_true", help="Removes empty lines")
 parser.add_argument(
     "-p",
     "--samepath",
     action="store_true",
     help="Input and output file name are the same",
 )
-parser.add_argument("-l", "--loop", action="store_true", help="Enables Loop mode")
+parser.add_argument("-f", "--ftp", action="store_true", help="Enables FTP")
 parser.add_argument("-s", "--stas", action="store_true", help="Generates STAS files")
+parser.add_argument(
+    "-n", "--nxtas", action="store_true", help="Generates nxTAS scripts"
+)
+parser.add_argument("-e", "--noempty", action="store_true", help="Removes empty lines")
+parser.add_argument("-l", "--loop", action="store_true", help="Enables Loop mode")
+parser.add_argument("-d", "--debug", action="store_true", help="Enables Debug mode")
 
 args = parser.parse_args()
 infile: str = args.infile
