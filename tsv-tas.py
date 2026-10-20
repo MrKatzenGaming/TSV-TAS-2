@@ -36,16 +36,19 @@ parser.add_argument("-s", "--stas", action="store_true", help="Generates STAS fi
 args = parser.parse_args()
 infile: str = args.infile
 outfile: str = args.outfile
-g.ftp = args.ftp
+ftp = args.ftp
 g.debug = args.debug
 g.nxtas = args.nxtas
-g.removeEmpty = args.noempty
-g.samePath = args.samepath
-g.loop = args.loop
+removeEmpty = (
+    args.noempty
+)  # won't work for lunakit/exlaunch format until mod treats y accel as -1
+
+samePath = args.samepath
+loop = args.loop
 g.stas = args.stas
 
 
-if outfile is None and not g.samePath:
+if outfile is None and not samePath:
     parser.error("outfile is required unless -p is specified")
 
 if infile.endswith(".tsv") or infile.endswith(".txt"):
@@ -55,7 +58,7 @@ elif infile.endswith(".csv"):
 else:
     sys.exit("Error: Invalid file type")
 
-if g.samePath:
+if samePath:
     outfile = infile[0 : infile.rindex(".")]
     if g.nxtas:
         outfile += ".txt"
@@ -65,14 +68,14 @@ if g.samePath:
 
 do_once = True
 
-if g.loop:
+if loop:
     print("Press enter to run command")
     print('Type "q" and press enter to quit')
 
-while g.loop or do_once:
+while loop or do_once:
     do_once = False
 
-    if g.loop:
+    if loop:
         input_text = input()
         if input_text == "q" or input_text == "quit" or input_text == "exit":
             break
@@ -256,7 +259,7 @@ while g.loop or do_once:
             prevLineInDuration = lineInDuration
 
         # add empty frames to end of script as needed to reach the total number of frames
-        if not g.removeEmpty:
+        if not removeEmpty:
             g.script.addFrames(indexStart)
 
         # now that all the inputs have been parsed, go through again to process toggled buttons
@@ -281,7 +284,7 @@ while g.loop or do_once:
                 calculateAngularVelocity(True)
 
         # remove empty frames (in 2P, only remove if both are empty)
-        if g.removeEmpty:
+        if removeEmpty:
             if g.script.is_two_player:
                 modelFrame_1P = modelFrame_2P = Frame.empty()
                 for i in range(len(g.script.frames_P1) - 1, -1, -1):
@@ -577,7 +580,7 @@ while g.loop or do_once:
 
     print("Script successfully generated")
 
-    if g.ftp:
+    if ftp:
         ftp_config_file = open("ftp_config.json")
         ftp_config = json.load(ftp_config_file)
         ftp_config_file.close()
