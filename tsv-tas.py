@@ -324,33 +324,13 @@ while loop or do_once:
             0: {"buttons": 0, "lStick": Joystick.zero(), "rStick": Joystick.zero()},
             1: {"buttons": 0, "lStick": Joystick.zero(), "rStick": Joystick.zero()},
         }
+        import io
 
-        outf = open(outfile, "wb")  # type: ignore
-        # File Header
-        size += outf.write(b"STAS")
-        size += outf.write(
-            struct.pack("<3H2xQ", 0x0001, 0x0000, 0x0000, 0x0100000000010000)
-        )  # Format Ver, Game Addon Ver, Editor Ver, Title Id
-
-        # Script Header
-        size += outf.write(struct.pack("<I", 0))  # TODO: Command Count
-        size += outf.write(
-            struct.pack("<I", g.script.frames[-1].step)
-        )  # TODO: This is bad
-        size += outf.write(struct.pack("<I", 0))  # Editing time in seconds
-        size += outf.write(
-            struct.pack("<8B", 2, 2 if g.script.is_two_player else 0, 0, 0, 0, 0, 0, 0)
-        )  # Controller types per player
-
-        size += writeAuthor(outf, g.script.author)
-
-        size += writeTitle(outf, g.script.title)
-
-        size += writeDesc(outf, g.script.description)
+        buf = io.BytesIO()  # type: ignore
 
         if g.script.change_stage_name:
             writeCmdGo(
-                outf,
+                buf,
                 g.script.scenario_no,
                 0,
                 False,
@@ -360,28 +340,28 @@ while loop or do_once:
 
         # reset every controller state
         writeCmdController(
-            outf, 0, int(0).to_bytes(7, "little"), Joystick.zero(), Joystick.zero()
+            buf, 0, int(0).to_bytes(7, "little"), Joystick.zero(), Joystick.zero()
         )
         writeCmdController(
-            outf, 1, int(0).to_bytes(7, "little"), Joystick.zero(), Joystick.zero()
+            buf, 1, int(0).to_bytes(7, "little"), Joystick.zero(), Joystick.zero()
         )
-        writeCmdMotion(outf, 0, 2, Vector3f.zero(), Vector3f.zero())
-        writeCmdMotion(outf, 1, 2, Vector3f.zero(), Vector3f.zero())
+        writeCmdMotion(buf, 0, 2, Vector3f.zero(), Vector3f.zero())
+        writeCmdMotion(buf, 1, 2, Vector3f.zero(), Vector3f.zero())
 
         for frame in g.script.frames:
             if frame.step > prevFrame:  # do only for 1P frames
                 prevFrame = frame.step
-                writeCmdFrame(outf, frame.step)
+                writeCmdFrame(buf, frame.step)
                 if frame.step == 0 and (
                     g.script.startPosition.x != 0
                     or g.script.startPosition.y != 0
                     or g.script.startPosition.z != 0
                 ):
-                    writeCmdTp(outf, g.script.startPosition, Quat4f.unit(), False)
+                    writeCmdTp(buf, g.script.startPosition, Quat4f.unit(), False)
                 # parse commands, this relies on every step being included but that is okay
                 for command_str in g.script.commands[frame.step]:
                     tokens = command_str.split(" ")
-                    parseCommand(outf, tokens)
+                    parseCommand(buf, tokens)
 
             # only write controller inputs if they differ
             if (prevController[frame.second_player]["buttons"] != frame.buttons) or (
@@ -389,7 +369,7 @@ while loop or do_once:
                 or prevController[frame.second_player]["rStick"] != frame.right_stick
             ):
                 writeCmdController(
-                    outf,
+                    buf,
                     frame.second_player,
                     frame.buttons.to_bytes(7, "little"),
                     frame.left_stick,
@@ -414,7 +394,7 @@ while loop or do_once:
                 or prevMotion[frame.second_player]["left"]["gyro"].NEQ0()
             ):
                 writeCmdMotion(
-                    outf,
+                    buf,
                     frame.second_player,
                     0,
                     frame.accel_left,
@@ -434,7 +414,7 @@ while loop or do_once:
                 )
             ):
                 writeCmdMotion(
-                    outf,
+                    buf,
                     frame.second_player,
                     1,
                     frame.accel_right,
@@ -444,6 +424,33 @@ while loop or do_once:
                     "accel": frame.accel_left,
                     "gyro": frame.gyro_left.ang_vel,
                 }
+
+        outf = open(outfile, "wb")  # type: ignore
+
+        # File Header
+        size += outf.write(b"STAS")
+        size += outf.write(
+            struct.pack("<3H2xQ", 0x0001, 0x0000, 0x0000, 0x0100000000010000)
+        )  # Format Ver, Game Addon Ver, Editor Ver, Title Id
+
+        # Script Header
+        size += outf.write(struct.pack("<I", g.cmdCount))
+        size += outf.write(
+            struct.pack("<I", g.script.frames[-1].step)
+        )  # TODO: This is bad
+        size += outf.write(struct.pack("<I", 0))  # Editing time in seconds
+        size += outf.write(
+            struct.pack("<8B", 2, 2 if g.script.is_two_player else 0, 0, 0, 0, 0, 0, 0)
+        )  # Controller types per player
+
+        size = writeAuthor(outf, size, g.script.author)
+
+        size = writeTitle(outf, size, g.script.title)
+
+        size = writeDesc(outf, size, g.script.description)
+
+        outf.write(buf.getbuffer())
+        buf.flush()
 
     else:  # TODO: maybe remove
         outf = open(outfile, "wb")  # type: ignore

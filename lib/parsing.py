@@ -207,7 +207,7 @@ COMMAND_ARG_COUNT: dict[str, Collection[int]] = {
 }
 
 
-def parseCommand(file: FileIO, tokens: list[str]):
+def parseCommand(file: BytesIO, tokens: list[str]):
     command: str = tokens[0].lower().strip()
     args = tokens[1:]
     if g.debug:
