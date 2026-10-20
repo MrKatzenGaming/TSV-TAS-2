@@ -4,7 +4,7 @@ from lib.classes import Joystick, Frame, Vector3f, Quat4f
 from lib.helpers import getStickPolar, eulerToQuat
 from lib.script import addToggle, addToFrameRange
 from collections.abc import Collection
-from stas import *
+from lib.stas import *
 import lib.globals as g
 
 
@@ -190,3 +190,94 @@ def parseLoop(token, indexWrite, duration, rowIndex, rowDuration):
             else:
                 exit("[parseLoop] Negative durations are not permitted within loops")
             indexWrite += durations[i]
+
+
+COMMAND_ARG_COUNT: dict[str, Collection[int]] = {
+    "tp": (3, 4, 6, 7),
+    "ctp": (3, 4, 6, 7),
+    "absStick": (1,),
+    "demo": (1,),
+    "speed": (1,),
+    "pause": (0,),
+    "loadFile": (1,),
+    "reloadFile": (0,),
+    "section": (1,),
+    "msection": (1,),
+    "csection": (1,),
+}
+
+
+def parseCommand(file: FileIO, tokens: list[str]):
+    command: str = tokens[0]
+    args = tokens[1:]
+    if g.debug:
+        print("Parsing command: " + str(command))
+
+    if len(args) not in COMMAND_ARG_COUNT[command]:
+        exit(f"[parseCommands] Incorrect number of args for /{command}")
+
+    if command in ("tp", "ctp"):
+        euler = Vector3f.zero()
+        quat = Quat4f.unit()
+        try:
+            x, y, z = map(float, args[0:3])
+            if len(args) == 4:
+                euler.y = float(args[4])
+                quat = eulerToQuat(euler)
+            elif len(args) == 6:
+                euler.x, euler.y, euler.z = map(float, args[3:6])
+                quat = eulerToQuat(euler)
+            elif len(args) == 7:
+                quat.x, quat.y, quat.z, quat.w = map(float, args[3:7])
+            writeCmdTp(file, Vector3f(x, y, z), quat, command == "ctp")
+            if g.debug:
+                print("Quat: " + str(quat))
+        except:
+            exit(f"[parseCommands] {command}: coordinates must be numbers")
+        return
+
+    if command in ("absStick", "demo"):
+        enabled = args[0] in ("true", "1", "on", "y", "yes")
+        if command == "absStick":
+            writeCmdAbsStick(file, enabled)
+        else:
+            writeCmdDemo(file, enabled)
+        return
+
+    if command == "speed":
+        try:
+            speed: int = int(args[0])
+            if speed > 10 or speed < 1:
+                exit(
+                    "[parseCommands] speed: Speed has to be between 1 and 10 inclusive"
+                )
+            writeCmdSpeedup(file, speed)
+        except:
+            exit("[parseCommands] speed: Supplied argument must be an integer")
+
+        return
+
+    if command == "pause":
+        writeCommand(file, 0xC006, b"")
+        return
+
+    if command == "loadFile":
+        try:
+            fileNum = int(args[0])
+            if fileNum < 0 or fileNum > 4:
+                exit("[parseCommands] loadFile: Can only load files between 0 and 4")
+            writeCmdSaveFile(file, fileNum, False)
+        except:
+            exit("[parseCommands] loadFile: Supplied argument must be an integer")
+        return
+
+    if command == "reloadFile":
+        writeCmdSaveFile(file, 0, True)
+        return
+
+    if command in ("section", "msection", "csection"):
+        taser: str = ", ".join(args[0:])
+        if command in ("section", "msection"):
+            writeCmdSection(file, False, taser)
+        if command in ("section", "csection"):
+            writeCmdSection(file, True, taser)
