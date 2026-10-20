@@ -341,16 +341,20 @@ while g.loop or do_once:
     elif g.stas:
         size: int = 0
         prevFrame: int = -1
-        prevMotion: list[list[list[Vector3f]]] = [  # player, left/right, accel/gyro
-            [[Vector3f.zero(), Vector3f.zero()], [Vector3f.zero(), Vector3f.zero()]],
-            [[Vector3f.zero(), Vector3f.zero()], [Vector3f.zero(), Vector3f.zero()]],
-        ]
-        prevController: list[list[object]] = (
-            [  # player, button/left joystick/right joystick
-                [0, Joystick.zero(), Joystick.zero()],
-                [0, Joystick.zero(), Joystick.zero()],
-            ]
-        )
+        prevMotion = {
+            0: {  # player 0
+                "left": {"accel": Vector3f.zero(), "gyro": Vector3f.zero()},
+                "right": {"accel": Vector3f.zero(), "gyro": Vector3f.zero()},
+            },
+            1: {  # player 1
+                "left": {"accel": Vector3f.zero(), "gyro": Vector3f.zero()},
+                "right": {"accel": Vector3f.zero(), "gyro": Vector3f.zero()},
+            },
+        }
+        prevController = {
+            0: {"buttons": 0, "lStick": Joystick.zero(), "rStick": Joystick.zero()},
+            1: {"buttons": 0, "lStick": Joystick.zero(), "rStick": Joystick.zero()},
+        }
 
         outf = open(outfile, "wb")  # type: ignore
         # File Header
@@ -396,7 +400,6 @@ while g.loop or do_once:
         writeCmdMotion(outf, 1, 2, Vector3f.zero(), Vector3f.zero())
 
         for frame in g.script.frames:
-            # print(f"{frame.step}, {frame.buttons}")
             if frame.step > prevFrame:  # do only for 1P frames
                 prevFrame = frame.step
                 writeCmdFrame(outf, frame.step)
@@ -412,9 +415,9 @@ while g.loop or do_once:
                     parseCommand(outf, tokens)
 
             # only write controller inputs if they differ
-            if (prevController[frame.second_player][0] != frame.buttons) or (
-                prevController[frame.second_player][1] != frame.left_stick
-                or prevController[frame.second_player][2] != frame.right_stick
+            if (prevController[frame.second_player]["buttons"] != frame.buttons) or (
+                prevController[frame.second_player]["lStick"] != frame.left_stick
+                or prevController[frame.second_player]["rStick"] != frame.right_stick
             ):
                 writeCmdController(
                     outf,
@@ -431,15 +434,15 @@ while g.loop or do_once:
                         + str(frame.second_player)
                     )
 
-            prevController[frame.second_player] = [
-                frame.buttons,
-                frame.left_stick,
-                frame.right_stick,
-            ]
+            prevController[frame.second_player] = {
+                "buttons": frame.buttons,
+                "lStick": frame.left_stick,
+                "rStick": frame.right_stick,
+            }
 
             if (frame.accel_left.NEQ0() or frame.gyro_left.ang_vel.NEQ0()) or (
-                prevMotion[frame.second_player][0][0].NEQ0()
-                or prevMotion[frame.second_player][0][1].NEQ0()
+                prevMotion[frame.second_player]["left"]["accel"].NEQ0()
+                or prevMotion[frame.second_player]["left"]["gyro"].NEQ0()
             ):
                 writeCmdMotion(
                     outf,
@@ -448,17 +451,17 @@ while g.loop or do_once:
                     frame.accel_left,
                     frame.gyro_left.ang_vel,
                 )
-                prevMotion[frame.second_player][0] = [
-                    frame.accel_left,
-                    frame.gyro_left.ang_vel,
-                ]
+                prevMotion[frame.second_player]["left"] = {
+                    "accel": frame.accel_left,
+                    "gyro": frame.gyro_left.ang_vel,
+                }
 
             if (
                 frame.accel_right.NEQ0()
                 or frame.gyro_right.ang_vel.NEQ0()
                 or (
-                    prevMotion[frame.second_player][1][0].NEQ0()
-                    or prevMotion[frame.second_player][1][1].NEQ0()
+                    prevMotion[frame.second_player]["right"]["accel"].NEQ0()
+                    or prevMotion[frame.second_player]["right"]["gyro"].NEQ0()
                 )
             ):
                 writeCmdMotion(
@@ -468,12 +471,12 @@ while g.loop or do_once:
                     frame.accel_right,
                     frame.gyro_right.ang_vel,
                 )
-                prevMotion[frame.second_player][1] = [
-                    frame.accel_right,
-                    frame.gyro_right.ang_vel,
-                ]
+                prevMotion[frame.second_player]["right"] = {
+                    "accel": frame.accel_left,
+                    "gyro": frame.gyro_left.ang_vel,
+                }
 
-    else:
+    else:  # TODO: maybe remove
         outf = open(outfile, "wb")  # type: ignore
         outf.write(b"BOOB")
         outf.write(
