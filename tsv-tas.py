@@ -580,7 +580,7 @@ while g.loop or do_once:
     if g.ftp:
         ftp_config_file = open("ftp_config.json")
         ftp_config = json.load(ftp_config_file)
-        ftp_config_file.close
+        ftp_config_file.close()
 
         ftpC = FTP()
         ftpC.connect(host=ftp_config["ip"], port=int(ftp_config["port"]))
