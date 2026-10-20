@@ -16,7 +16,7 @@ def parseDuration(token, default):
             try:
                 duration = int(float(duration_str))  # rounds down floats
             except:
-                exit("Error: Invalid local duration in row " + g.gLineInNumber)
+                exit("Error: Invalid local duration in row " + g.lineInNumber)
         token = token.replace(token[token.index("[") : token.index("]") + 1], "")
         return token.strip(), duration
     except:
@@ -25,7 +25,7 @@ def parseDuration(token, default):
 
 # parses token into subtokens
 def parseToken(token, indexWrite, duration, rowIndex, rowDuration):
-    if g.gDebug:
+    if g.debug:
         print("Parsing Token: " + token)
         print("Write Index: " + str(indexWrite))
 
@@ -35,7 +35,7 @@ def parseToken(token, indexWrite, duration, rowIndex, rowDuration):
             token, duration
         )  # see if there is a duration associated with the token
 
-    if g.gDebug:
+    if g.debug:
         print("Duration: " + str(duration))
 
     if len(token) > 0 and token[0] == "(" and token[-1] == ")":
@@ -69,32 +69,32 @@ def parseInterpolatedStick(token, indexStart, duration):
     if "@" in token:
         exit(
             "Error: Stick interpolation on line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + " cannot use @ symbol"
         )
     if duration < 0:
         exit(
             "Error: Stick interpolation on line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + " cannot have negative duration"
         )
     if duration < 2:
         exit(
             "Error: Stick interpolation on line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + " must have duration of at least 2"
         )
 
     player_two = "c" in token
 
     # add frames as necessary
-    g.gScript.addFrames(indexStart + duration)
+    g.script.addFrames(indexStart + duration)
     indexStop = indexStart + duration
 
     if indexStart - 1 < 0:
         prev_frame = Frame.empty()
     else:
-        prev_frame = g.gScript.getFrames(player_two)[indexStart - 1]
+        prev_frame = g.script.getFrames(player_two)[indexStart - 1]
 
     try:
         token1, token2 = token.split("->")
@@ -116,29 +116,29 @@ def parseInterpolatedStick(token, indexStart, duration):
 
         for i in range(indexStart, indexStop):
             if right:
-                g.gScript.getFrames(player_two)[i].right_stick = Joystick.polar(
+                g.script.getFrames(player_two)[i].right_stick = Joystick.polar(
                     (r, theta)
                 )
             else:
-                g.gScript.getFrames(player_two)[i].left_stick = Joystick.polar(
+                g.script.getFrames(player_two)[i].left_stick = Joystick.polar(
                     (r, theta)
                 )
             r += dr
             theta += dtheta
         if right:
-            g.gScript.getFrames(player_two)[indexStop - 1].right_stick = Joystick.polar(
+            g.script.getFrames(player_two)[indexStop - 1].right_stick = Joystick.polar(
                 (r2, theta2)
             )
         else:
-            g.gScript.getFrames(player_two)[indexStop - 1].left_stick = Joystick.polar(
+            g.script.getFrames(player_two)[indexStop - 1].left_stick = Joystick.polar(
                 (r2, theta2)
             )
     except Exception as e:
-        if g.gDebug:
+        if g.debug:
             print(e)
         exit(
             "Error: Syntax error(s) on line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + " prevented script generation"
         )
 
@@ -150,7 +150,7 @@ def parseSequence(token, indexWrite, rowIndex, rowDuration):
         if duration == "*":
             exit(
                 "Error: * not supported for durations within sequences (line "
-                + str(g.gLineInNumber)
+                + str(g.lineInNumber)
                 + ")"
             )
         elif duration == "?":
@@ -166,7 +166,7 @@ def parseLoop(token, indexWrite, duration, rowIndex, rowDuration):
         exit(
             duration
             + " not supported for durations within sequences (line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + ")"
         )
     elif duration == 0:
@@ -174,7 +174,7 @@ def parseLoop(token, indexWrite, duration, rowIndex, rowDuration):
     elif duration < 0:
         exit(
             "Error: Loop on line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + " cannot have negative total duration"
         )
 

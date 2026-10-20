@@ -36,16 +36,16 @@ parser.add_argument("-s", "--stas", action="store_true", help="Generates STAS fi
 args = parser.parse_args()
 infile: str = args.infile
 outfile: str = args.outfile
-g.gFtp = args.ftp
-g.gDebug = args.debug
-g.gNxtas = args.nxtas
-g.gRemoveEmpty = args.noempty
-g.gSamePath = args.samepath
-g.gLoop = args.loop
-g.gStas = args.stas
+g.ftp = args.ftp
+g.debug = args.debug
+g.nxtas = args.nxtas
+g.removeEmpty = args.noempty
+g.samePath = args.samepath
+g.loop = args.loop
+g.stas = args.stas
 
 
-if outfile is None and not g.gSamePath:
+if outfile is None and not g.samePath:
     parser.error("outfile is required unless -p is specified")
 
 if infile.endswith(".tsv") or infile.endswith(".txt"):
@@ -55,29 +55,29 @@ elif infile.endswith(".csv"):
 else:
     sys.exit("Error: Invalid file type")
 
-if g.gSamePath:
+if g.samePath:
     outfile = infile[0 : infile.rindex(".")]
-    if g.gNxtas:
+    if g.nxtas:
         outfile += ".txt"
-    elif g.gStas:
+    elif g.stas:
         outfile += ".stas"
 
 
 do_once = True
 
-if g.gLoop:
+if g.loop:
     print("Press enter to run command")
     print('Type "q" and press enter to quit')
 
-while g.gLoop or do_once:
+while g.loop or do_once:
     do_once = False
 
-    if g.gLoop:
+    if g.loop:
         input_text = input()
         if input_text == "q" or input_text == "quit" or input_text == "exit":
             break
 
-    g.gScript.title = infile.split("/")[-1]
+    g.script.title = infile.split("/")[-1]
 
     num_frames = 0
 
@@ -96,7 +96,7 @@ while g.gLoop or do_once:
             num_frames += duration
         f.close()
 
-    g.gScript.frames_P1 = [
+    g.script.frames_P1 = [
         Frame(
             i,
             False,
@@ -113,8 +113,8 @@ while g.gLoop or do_once:
         )
         for i in range(num_frames)
     ]
-    if g.gScript.is_two_player:
-        g.gScript.frames_P2 = [
+    if g.script.is_two_player:
+        g.script.frames_P2 = [
             Frame(
                 i,
                 True,
@@ -140,7 +140,7 @@ while g.gLoop or do_once:
     with open(infile) as f:
         prevLineInDuration = 1
         for lineIn in f:
-            if g.gDebug:
+            if g.debug:
                 print(lineIn)
             lineIn = lineIn.split(separator)  # type: ignore
             lineIn[-1] = lineIn[-1].strip()  # type: ignore
@@ -164,42 +164,42 @@ while g.gLoop or do_once:
 
                         # script start variables
                         if var == "stage":
-                            g.gScript.change_stage_name = value
+                            g.script.change_stage_name = value
                         elif var == "entr" or var == "entrance":
-                            g.gScript.change_stage_id = value
+                            g.script.change_stage_id = value
                         elif var == "scen" or var == "scenario":
                             try:
-                                g.gScript.scenario_no = int(value)
+                                g.script.scenario_no = int(value)
                             except:
                                 sys.exit("Error: Invalid scenario number")
                         elif var == "independent_gyro" or var == "ind_gyro":
                             if value.lower() == "true" or value.lower() == "t":
-                                g.gIndependentGyro = True
+                                g.independentGyro = True
                         elif var == "pos" or var == "position":
                             value = value[value.index("(") + 1 : value.index(")")]
                             coords = value.split(";")
-                            g.gScript.startPosition.x = float(coords[0])
-                            g.gScript.startPosition.y = float(coords[1])
-                            g.gScript.startPosition.z = float(coords[2])
+                            g.script.startPosition.x = float(coords[0])
+                            g.script.startPosition.y = float(coords[1])
+                            g.script.startPosition.z = float(coords[2])
                         elif var == "title":
-                            g.gScript.title = value
+                            g.script.title = value
                         elif var == "author":
-                            g.gScript.author = value
+                            g.script.author = value
                         elif var == "desc" or var == "description":
-                            g.gScript.description = value
+                            g.script.description = value
                         elif var == "motion_offset":
-                            g.gMotionOffset = int(value)
+                            g.motionOffset = int(value)
                         elif var == "ls_offset":
-                            g.gLsOffset = float(value)
+                            g.lsOffset = float(value)
                         elif var == "is2p" or var == "is_two_player":
                             if value.lower() == "true" or value.lower() == "t":
-                                g.gScript.is_two_player = True
+                                g.script.is_two_player = True
                                 is_two_player = True
 
                         # add variable values to dictionary
                         value = prepareToken(value, True, 0)
                         vars.update({var: value})
-                        g.gLineInNumber += 1
+                        g.lineInNumber += 1
                         continue
                     else:
                         try:
@@ -211,13 +211,13 @@ while g.gLoop or do_once:
                                 )
                             )
                         except:
-                            g.gLineInNumber += 1
+                            g.lineInNumber += 1
                             continue
                 elif first[0] == "/" and first[1] != "/":  # commands
-                    for _ in range(len(g.gScript.commands), indexStart + 1):
-                        g.gScript.commands.append([])
-                    g.gScript.commands[indexStart].append(first[1:])
-                    g.gLineInNumber += 1
+                    for _ in range(len(g.script.commands), indexStart + 1):
+                        g.script.commands.append([])
+                    g.script.commands[indexStart].append(first[1:])
+                    g.lineInNumber += 1
                     continue
                 else:
                     try:
@@ -229,7 +229,7 @@ while g.gLoop or do_once:
                             )
                         )
                     except:
-                        g.gLineInNumber += 1
+                        g.lineInNumber += 1
                         continue
 
             for i in range(1, len(lineIn)):
@@ -239,7 +239,7 @@ while g.gLoop or do_once:
                 # perform all variable evaluation and as much math evaluation as possible
                 token = prepareToken(lineIn[i], False, lineInDuration)
 
-                if g.gDebug:
+                if g.debug:
                     print("Line Duration: " + str(lineInDuration))
                 parseToken(
                     token,
@@ -252,22 +252,22 @@ while g.gLoop or do_once:
             if lineInDuration == "*":
                 lineInDuration = 0
             indexStart += lineInDuration
-            g.gLineInNumber += 1
+            g.lineInNumber += 1
             prevLineInDuration = lineInDuration
 
         # add empty frames to end of script as needed to reach the total number of frames
-        if not g.gRemoveEmpty:
-            g.gScript.addFrames(indexStart)
+        if not g.removeEmpty:
+            g.script.addFrames(indexStart)
 
         # now that all the inputs have been parsed, go through again to process toggled buttons
         buttonsOn = 0
-        for frame in g.gScript.frames_P1:
+        for frame in g.script.frames_P1:
             buttonsOn |= frame.buttonsOn
             buttonsOff = frame.buttons | frame.buttonsOff
             buttonsOn &= ~buttonsOff
             frame.buttons |= buttonsOn
-        if g.gScript.is_two_player:
-            for frame in g.gScript.frames_P2:
+        if g.script.is_two_player:
+            for frame in g.script.frames_P2:
                 buttonsOn |= frame.buttonsOn
                 buttonsOff = frame.buttons | frame.buttonsOff
                 buttonsOn &= ~buttonsOff
@@ -275,58 +275,58 @@ while g.gLoop or do_once:
 
         # calculate angular velocity if gyroscope and angular velocity are not independent, or calculate proper gyroscope if a motion macro is used
         # angular velocity is change in gyroscope in degrees times -3/400
-        if not g.gIndependentGyro:
+        if not g.independentGyro:
             calculateAngularVelocity(False)
-            if g.gScript.is_two_player:
+            if g.script.is_two_player:
                 calculateAngularVelocity(True)
 
         # remove empty frames (in 2P, only remove if both are empty)
-        if g.gRemoveEmpty:
-            if g.gScript.is_two_player:
+        if g.removeEmpty:
+            if g.script.is_two_player:
                 modelFrame_1P = modelFrame_2P = Frame.empty()
-                for i in range(len(g.gScript.frames_P1) - 1, -1, -1):
+                for i in range(len(g.script.frames_P1) - 1, -1, -1):
                     modelFrame_1P.step = modelFrame_2P.step = i
-                    modelFrame_1P.buttonsOn = g.gScript.frames_P1[i].buttonsOn
-                    modelFrame_1P.buttonsOff = g.gScript.frames_P1[i].buttonsOff
-                    modelFrame_2P.buttonsOn = g.gScript.frames_P2[i].buttonsOn
-                    modelFrame_2P.buttonsOff = g.gScript.frames_P2[i].buttonsOff
+                    modelFrame_1P.buttonsOn = g.script.frames_P1[i].buttonsOn
+                    modelFrame_1P.buttonsOff = g.script.frames_P1[i].buttonsOff
+                    modelFrame_2P.buttonsOn = g.script.frames_P2[i].buttonsOn
+                    modelFrame_2P.buttonsOff = g.script.frames_P2[i].buttonsOff
                     if (
-                        modelFrame_1P == g.gScript.frames_P1[i]
-                        and modelFrame_2P == g.gScript.frames_P2[i]
+                        modelFrame_1P == g.script.frames_P1[i]
+                        and modelFrame_2P == g.script.frames_P2[i]
                     ):
-                        del g.gScript.frames_P1[i]
-                        del g.gScript.frames_P2[i]
+                        del g.script.frames_P1[i]
+                        del g.script.frames_P2[i]
             else:
                 modelFrame = Frame.empty()
-                for i in range(len(g.gScript.frames_P1) - 1, -1, -1):
+                for i in range(len(g.script.frames_P1) - 1, -1, -1):
                     modelFrame.step = i
-                    modelFrame.buttonsOn = g.gScript.frames_P1[i].buttonsOn
-                    modelFrame.buttonsOff = g.gScript.frames_P1[i].buttonsOff
-                    if modelFrame == g.gScript.frames_P1[i]:
-                        del g.gScript.frames_P1[i]
+                    modelFrame.buttonsOn = g.script.frames_P1[i].buttonsOn
+                    modelFrame.buttonsOff = g.script.frames_P1[i].buttonsOff
+                    if modelFrame == g.script.frames_P1[i]:
+                        del g.script.frames_P1[i]
 
     # write all 1P and 2P frames to the same array
-    g.gScript.combineFrames()
+    g.script.combineFrames()
 
-    if g.gDebug:
+    if g.debug:
         debugFile = open(outfile + "-debug.csv", "w")
 
         debugFile.write(
             "Frame,2ndPlayer,Buttons,ButtonsOn,ButtonsOff,lx.r,ls.theta,ls.x,ls.y,rs.r,rs.theta,rs.x,rs.y,la.x,la.y,la.z,ra.x,ra.y,ra.z,lg.r.xx,lg.r.xy,lg.r.xz,lg.r.yx,lg.r.yy,lg.r.yz,lg.r.zx,lg.r.zy,lg.r.zz,lg.v.x,lg.v.y,lg.v.z,rg.r.xx,rg.r.xy,rg.r.xz,rg.r.yx,rg.r.yy,rg.r.yz,rg.r.zx,rg.r.zy,rg.r.zz,rg.v.x,rg.v.y,rg.v.z,Command\n"
         )
-        for i in range(len(g.gScript.frames)):
+        for i in range(len(g.script.frames)):
             csv_writer = csv.writer(debugFile, delimiter=",")
-            data = g.gScript.frames[i].toStrArray(g.gScript)
+            data = g.script.frames[i].toStrArray(g.script)
             csv_writer.writerow(data)
         debugFile.close()
 
-    if g.gNxtas:
+    if g.nxtas:
         outf: FileIO = open(outfile, "w")  # type: ignore
-        for frame in g.gScript.frames:
+        for frame in g.script.frames:
             outf.write(
                 str(frame.step)  # type: ignore
                 + " "
-                + nxTAS_Buttons(frame.buttons, g.gStas)
+                + nxTAS_Buttons(frame.buttons, g.stas)
                 + " "
                 + str(frame.left_stick.x)
                 + ";"
@@ -338,7 +338,7 @@ while g.gLoop or do_once:
                 + "\n"
             )
 
-    elif g.gStas:
+    elif g.stas:
         size: int = 0
         prevFrame: int = -1
         prevMotion: list[list[list[Vector3f]]] = [  # player, left/right, accel/gyro
@@ -362,27 +362,27 @@ while g.gLoop or do_once:
         # Script Header
         size += outf.write(struct.pack("<I", 0))  # TODO: Command Count
         size += outf.write(
-            struct.pack("<I", g.gScript.frames[-1].step)
+            struct.pack("<I", g.script.frames[-1].step)
         )  # TODO: This is bad
         size += outf.write(struct.pack("<I", 0))  # Editing time in seconds
         size += outf.write(
-            struct.pack("<8B", 2, 2 if g.gScript.is_two_player else 0, 0, 0, 0, 0, 0, 0)
+            struct.pack("<8B", 2, 2 if g.script.is_two_player else 0, 0, 0, 0, 0, 0, 0)
         )  # Controller types per player
 
-        size += writeAuthor(outf, g.gScript.author)
+        size += writeAuthor(outf, g.script.author)
 
-        size += writeTitle(outf, g.gScript.title)
+        size += writeTitle(outf, g.script.title)
 
-        size += writeDesc(outf, g.gScript.description)
+        size += writeDesc(outf, g.script.description)
 
-        if g.gScript.change_stage_name:
+        if g.script.change_stage_name:
             writeCmdGo(
                 outf,
-                g.gScript.scenario_no,
+                g.script.scenario_no,
                 0,
                 False,
-                g.gScript.change_stage_name,
-                g.gScript.change_stage_id,
+                g.script.change_stage_name,
+                g.script.change_stage_id,
             )
 
         # reset every controller state
@@ -395,22 +395,22 @@ while g.gLoop or do_once:
         writeCmdMotion(outf, 0, 2, Vector3f.zero(), Vector3f.zero())
         writeCmdMotion(outf, 1, 2, Vector3f.zero(), Vector3f.zero())
 
-        for frame in g.gScript.frames:
+        for frame in g.script.frames:
             # print(f"{frame.step}, {frame.buttons}")
             if frame.step > prevFrame:  # do only for 1P frames
                 prevFrame = frame.step
                 writeCmdFrame(outf, frame.step)
                 if frame.step == 0 and (
-                    g.gScript.startPosition.x != 0
-                    or g.gScript.startPosition.y != 0
-                    or g.gScript.startPosition.z != 0
+                    g.script.startPosition.x != 0
+                    or g.script.startPosition.y != 0
+                    or g.script.startPosition.z != 0
                 ):
-                    writeCmdTp(outf, g.gScript.startPosition, Quat4f.unit(), False)
+                    writeCmdTp(outf, g.script.startPosition, Quat4f.unit(), False)
                 # parse commands, this relies on every step being included but that is okay
-                for command_str in g.gScript.commands[frame.step]:
+                for command_str in g.script.commands[frame.step]:
                     tokens = command_str.split(" ")
                     command = tokens[0]
-                    if g.gDebug:
+                    if g.debug:
                         print("Parsing command: " + str(command))
                     if command == "tp" or command == "ctp":
                         isCap = command == "ctp"
@@ -432,7 +432,7 @@ while g.gLoop or do_once:
                                         float, tokens[4:8]
                                     )
                                 writeCmdTp(outf, Vector3f(x, y, z), quat, isCap)
-                                if g.gDebug:
+                                if g.debug:
                                     print("Quat: " + str(quat))
                             except:
                                 sys.exit(
@@ -511,7 +511,7 @@ while g.gLoop or do_once:
                     frame.left_stick,
                     frame.right_stick,
                 )
-                if g.gDebug:
+                if g.debug:
                     print(
                         "Wrote frame "
                         + str(frame.step)
@@ -567,29 +567,29 @@ while g.gLoop or do_once:
         outf.write(
             struct.pack(
                 "<I?3xi",
-                len(g.gScript.frames),
-                g.gScript.is_two_player,
-                g.gScript.scenario_no,
+                len(g.script.frames),
+                g.script.is_two_player,
+                g.script.scenario_no,
             )
         )
         outf.write(
-            bytes(g.gScript.change_stage_name, encoding="ascii")
-            + b"\0" * (128 - len(g.gScript.change_stage_name))
+            bytes(g.script.change_stage_name, encoding="ascii")
+            + b"\0" * (128 - len(g.script.change_stage_name))
         )
         outf.write(
-            bytes(g.gScript.change_stage_id, encoding="ascii")
-            + b"\0" * (128 - len(g.gScript.change_stage_id))
+            bytes(g.script.change_stage_id, encoding="ascii")
+            + b"\0" * (128 - len(g.script.change_stage_id))
         )
         outf.write(
             struct.pack(
                 "<3f",
-                g.gScript.startPosition.x,
-                g.gScript.startPosition.y,
-                g.gScript.startPosition.z,
+                g.script.startPosition.x,
+                g.script.startPosition.y,
+                g.script.startPosition.z,
             )
         )
 
-        for frame in g.gScript.frames:
+        for frame in g.script.frames:
             outf.write(
                 struct.pack("<I?3xI", frame.step, frame.second_player, frame.buttons)
             )
@@ -662,7 +662,7 @@ while g.gLoop or do_once:
 
     print("Script successfully generated")
 
-    if g.gFtp:
+    if g.ftp:
         ftp_config_file = open("ftp_config.json")
         ftp_config = json.load(ftp_config_file)
         ftp_config_file.close

@@ -170,7 +170,7 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
         theta_token = token[token.index(";") + 1 :]
         if prev_frame is not None:
             r_token, theta_token = evaluateLast(r_token, prev_stick.r), evaluateLast(
-                theta_token, prev_stick.theta - g.gLsOffset
+                theta_token, prev_stick.theta - g.lsOffset
             )
         if offset_from_row_index is not None:
             r_token, theta_token = evaluateCurrentFrame(
@@ -179,11 +179,11 @@ def getStickPolar(token, right_stick, prev_frame, offset_from_row_index):
         r, theta = float(r_token), float(theta_token)
     else:  # (r)
         if prev_frame is not None:
-            token = evaluateLast(token, prev_stick.theta - g.gLsOffset)
+            token = evaluateLast(token, prev_stick.theta - g.lsOffset)
         if offset_from_row_index is not None:
             token = evaluateCurrentFrame(token, offset_from_row_index)
         theta = float(token)
-    theta += g.gLsOffset
+    theta += g.lsOffset
     return r, theta
 
 
@@ -236,21 +236,21 @@ def getGyroValues(token):
 # calculates needed angular velocities for all frames based on the gyroscope
 def calculateAngularVelocity(player_two):
     euler_left_old, euler_right_old = (
-        g.gScript.getFrames(player_two)[0].gyro_left.euler,
-        g.gScript.getFrames(player_two)[0].gyro_right.euler,
+        g.script.getFrames(player_two)[0].gyro_left.euler,
+        g.script.getFrames(player_two)[0].gyro_right.euler,
     )
-    for i in range(1, len(g.gScript.getFrames(player_two))):
+    for i in range(1, len(g.script.getFrames(player_two))):
         euler_left, euler_right = (
-            g.gScript.getFrames(player_two)[i].gyro_left.euler,
-            g.gScript.getFrames(player_two)[i].gyro_right.euler,
+            g.script.getFrames(player_two)[i].gyro_left.euler,
+            g.script.getFrames(player_two)[i].gyro_right.euler,
         )
-        if not g.gScript.getFrames(player_two)[i].macro:
-            g.gScript.getFrames(player_two)[i].gyro_left.ang_vel = Vector3f(
+        if not g.script.getFrames(player_two)[i].macro:
+            g.script.getFrames(player_two)[i].gyro_left.ang_vel = Vector3f(
                 ANG_VEL_FACTOR * (euler_left.x - euler_left_old.x),
                 ANG_VEL_FACTOR * (euler_left.y - euler_left_old.y),
                 ANG_VEL_FACTOR * (euler_left.z - euler_left_old.z),
             )
-            g.gScript.getFrames(player_two)[i].gyro_right.ang_vel = Vector3f(
+            g.script.getFrames(player_two)[i].gyro_right.ang_vel = Vector3f(
                 ANG_VEL_FACTOR * (euler_right.x - euler_right_old.x),
                 ANG_VEL_FACTOR * (euler_right.y - euler_right_old.y),
                 ANG_VEL_FACTOR * (euler_right.z - euler_right_old.z),

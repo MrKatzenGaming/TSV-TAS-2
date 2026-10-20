@@ -12,7 +12,7 @@ def addToFrameRange(token, frameRange: range, rowIndex):
             maxFrame = j
         if j < minFrame:
             minFrame = j
-    g.gScript.addFrames(maxFrame + 1)
+    g.script.addFrames(maxFrame + 1)
 
     if frameRange.start < 0 or frameRange.stop < -1:
         exit("Error: Negative durations cannot go before frame 0")
@@ -43,9 +43,9 @@ def addToFrameRange(token, frameRange: range, rowIndex):
                     )
                     for j in frameRange:
                         if right:
-                            g.gScript.getFrames(player_two)[j].right_stick = coords
+                            g.script.getFrames(player_two)[j].right_stick = coords
                         if left:
-                            g.gScript.getFrames(player_two)[j].left_stick = coords
+                            g.script.getFrames(player_two)[j].left_stick = coords
                 elif (
                     previous_input_symbol or current_symbol
                 ):  # need to calculate each frame individually
@@ -54,53 +54,53 @@ def addToFrameRange(token, frameRange: range, rowIndex):
                             if j - 1 < 0:
                                 prev_frame = Frame.empty()
                             else:
-                                prev_frame = g.gScript.getFrames(player_two)[j - 1]
+                                prev_frame = g.script.getFrames(player_two)[j - 1]
                         else:
                             prev_frame = None
                         coords = Joystick.polar(
                             getStickPolar(token, right, prev_frame, j - rowIndex)
                         )
                         if right:
-                            g.gScript.getFrames(player_two)[j].right_stick = coords
+                            g.script.getFrames(player_two)[j].right_stick = coords
                         if left:
-                            g.gScript.getFrames(player_two)[j].left_stick = coords
+                            g.script.getFrames(player_two)[j].left_stick = coords
                 else:
                     polar_coords = getStickPolar(token, right, None, None)
                     coords = Joystick.polar(polar_coords)
                     for j in frameRange:
                         if right:
-                            g.gScript.getFrames(player_two)[j].right_stick = coords
+                            g.script.getFrames(player_two)[j].right_stick = coords
                         if left:
-                            g.gScript.getFrames(player_two)[j].left_stick = coords
+                            g.script.getFrames(player_two)[j].left_stick = coords
 
             elif "a" in prefix:  # accelerometer
                 accel = Vector3f(*map(to_f2, map(float, token.split(";"))))
 
                 for j in frameRange:
                     if right:
-                        g.gScript.getFrames(player_two)[j].accel_right = accel
+                        g.script.getFrames(player_two)[j].accel_right = accel
                     if left:
-                        g.gScript.getFrames(player_two)[j].accel_left = accel
+                        g.script.getFrames(player_two)[j].accel_left = accel
 
             elif "g" in prefix:  # gyroscope
                 gyro = getGyroValues(token)
 
                 for j in frameRange:
                     if right:
-                        g.gScript.getFrames(player_two)[j].gyro_right = gyro
+                        g.script.getFrames(player_two)[j].gyro_right = gyro
                     if left:
-                        g.gScript.getFrames(player_two)[j].gyro_left = gyro
+                        g.script.getFrames(player_two)[j].gyro_left = gyro
 
         elif token == "m" or "m-" in token:  # motion macros
-            if g.gMotionOffset != 0:  # shifting motion earlier or later
-                newStart = frameRange.start + g.gMotionOffset
+            if g.motionOffset != 0:  # shifting motion earlier or later
+                newStart = frameRange.start + g.motionOffset
                 while newStart < 0:
                     newStart += frameRange.step
-                newStop = max(frameRange.stop + g.gMotionOffset, -1)
+                newStop = max(frameRange.stop + g.motionOffset, -1)
                 frameRange = range(newStart, newStop, frameRange.step)
 
             if (
-                g.gMotionOffset > 0
+                g.motionOffset > 0
             ):  # ensure there are still enough frames if motion is shifted later
                 minFrame = maxFrame = 0
                 for j in frameRange:
@@ -108,9 +108,9 @@ def addToFrameRange(token, frameRange: range, rowIndex):
                         maxFrame = j
                     if j < minFrame:
                         minFrame = j
-                g.gScript.addFrames(maxFrame + 1)
+                g.script.addFrames(maxFrame + 1)
 
-            if not g.gNxtas:
+            if not g.nxtas:
                 accel_left = Vector3f.default_accel()
                 accel_right = Vector3f.default_accel()
                 gyro_left = Gyro.zero()
@@ -144,14 +144,14 @@ def addToFrameRange(token, frameRange: range, rowIndex):
 
                 for j in frameRange:
                     (
-                        g.gScript.getFrames(player_two)[j].accel_left,
-                        g.gScript.getFrames(player_two)[j].accel_right,
+                        g.script.getFrames(player_two)[j].accel_left,
+                        g.script.getFrames(player_two)[j].accel_right,
                     ) = (accel_left, accel_right)
                     (
-                        g.gScript.getFrames(player_two)[j].gyro_left,
-                        g.gScript.getFrames(player_two)[j].gyro_right,
+                        g.script.getFrames(player_two)[j].gyro_left,
+                        g.script.getFrames(player_two)[j].gyro_right,
                     ) = (gyro_left, gyro_right)
-                    g.gScript.getFrames(player_two)[j].macro = True
+                    g.script.getFrames(player_two)[j].macro = True
 
             else:  # nx-tas motion keybinds
                 l_button = False
@@ -182,29 +182,29 @@ def addToFrameRange(token, frameRange: range, rowIndex):
 
                 if l_button:
                     for j in frameRange:
-                        g.gScript.getFrames(player_two)[j].buttons |= (
+                        g.script.getFrames(player_two)[j].buttons |= (
                             2**Button.cPadIdx_L.value
-                            if not g.gStas
+                            if not g.stas
                             else 2**STASButton.cSTAS_L.value
                         )
 
                 # include dpad button
 
-                button_bin = getButtonBin(token, g.gStas)
+                button_bin = getButtonBin(token, g.stas)
                 for j in frameRange:
-                    g.gScript.getFrames(player_two)[j].buttons |= button_bin
+                    g.script.getFrames(player_two)[j].buttons |= button_bin
 
         else:  # button or comment/invalid
-            button_bin = getButtonBin(token, g.gStas)
+            button_bin = getButtonBin(token, g.stas)
             for j in frameRange:
-                g.gScript.getFrames(player_two)[j].buttons |= button_bin
+                g.script.getFrames(player_two)[j].buttons |= button_bin
 
     except Exception as e:
-        if g.gDebug:
+        if g.debug:
             print(e)
         exit(
             "Syntax error(s) on line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + " prevented gScript generation"
         )
 
@@ -213,18 +213,18 @@ def addToFrameRange(token, frameRange: range, rowIndex):
 def addToggle(token, indexWrite, on):
     try:
         player_two = "c" in token
-        button_bin = getButtonBin(token, g.gStas)
+        button_bin = getButtonBin(token, g.stas)
 
-        g.gScript.addFrames(indexWrite + 1)
+        g.script.addFrames(indexWrite + 1)
         if on:
-            g.gScript.getFrames(player_two)[indexWrite].buttonsOn |= button_bin
+            g.script.getFrames(player_two)[indexWrite].buttonsOn |= button_bin
         else:
-            g.gScript.getFrames(player_two)[indexWrite].buttonsOff |= button_bin
+            g.script.getFrames(player_two)[indexWrite].buttonsOff |= button_bin
     except Exception as e:
-        if g.gDebug:
+        if g.debug:
             print(e)
         exit(
             "Syntax error(s) on line "
-            + str(g.gLineInNumber)
+            + str(g.lineInNumber)
             + " prevented gScript generation"
         )
