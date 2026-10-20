@@ -265,7 +265,7 @@ def parseCommand(file: BytesIO, tokens: list[str]) -> None:
         writeCommand(file, 0xC006, b"")
         return
 
-    if command == "loadsile":
+    if command == "loadfile":
         try:
             fileNum = int(args[0])
             if fileNum < 0 or fileNum > 4:
@@ -275,7 +275,7 @@ def parseCommand(file: BytesIO, tokens: list[str]) -> None:
             exit("[parseCommands] loadFile: Supplied argument must be an integer")
         return
 
-    if command == "reloadsile":
+    if command == "reloadfile":
         writeCmdSaveFile(file, 0, True)
         return
 
